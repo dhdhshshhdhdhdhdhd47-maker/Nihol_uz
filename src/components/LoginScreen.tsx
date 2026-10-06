@@ -114,12 +114,7 @@ export default function LoginScreen({ onLoginSuccess, onEnterParentPortal }: Log
   const { isTelegramWebApp, tgUser } = useTelegramWebApp(onLoginSuccess);
 
   const demoAccounts = [
-    { label: "Super Admin", user: "superadmin", pass: "admin135@", desc: "SaaS & Bog'chalar nazorati" },
-    { label: "Direktor", user: "director", pass: "admin135@", desc: "To'liq bog'cha boshqaruvi" },
-    { label: "Tarbiyachi", user: "teacher", pass: "admin135@", desc: "Davomat, baholar, faollik" },
-    { label: "Oshpaz", user: "chef", pass: "admin135@", desc: "Taomnoma, AI Kaloriya tahlili" },
-    { label: "Hamshira", user: "nurse", pass: "admin135@", desc: "Tibbiy kartalar, bo'y-vazn, emlash" },
-    { label: "Buxgalter", user: "accountant", pass: "admin135@", desc: "Oylik to'lovlar, tushum, cheklar" },
+    { label: "Super Admin", user: "superadmin", pass: "admin135@", desc: "Tizim Boshqaruvi" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
