@@ -641,7 +641,7 @@ export default function App() {
 
             <div className="flex flex-col gap-2.5 pt-2">
               <a
-                href="https://t.me/nihol_erp_bot"
+                href="https://t.me/School18Uz_bot"
                 target="_blank"
                 rel="noreferrer"
                 className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-sky-500/10"
