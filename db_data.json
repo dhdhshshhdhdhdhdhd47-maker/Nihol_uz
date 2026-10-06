@@ -1,0 +1,60 @@
+{
+  "kindergartens": [
+    {
+      "id": "K-1",
+      "name": "Nihol AI Bog'chasi",
+      "address": "Toshkent shahar",
+      "phone": "+998711234567",
+      "directorName": "SuperAdmin",
+      "directorUsername": "superadmin"
+    }
+  ],
+  "children": [],
+  "groups": [
+    {
+      "id": "G-1",
+      "name": "1-Guruh (Asosiy)",
+      "teacherId": "",
+      "room": "101-xona",
+      "capacity": 30,
+      "ageRange": "3-6 yosh",
+      "kindergartenId": "K-1"
+    }
+  ],
+  "employees": [
+    {
+      "id": "E-1",
+      "username": "superadmin",
+      "passwordHash": "admin135@",
+      "role": "SuperAdmin",
+      "name": "Asqarov Jamshid (SuperAdmin)",
+      "phone": "+998909990000",
+      "passport": "AA1234567",
+      "birthDate": "1990-01-01",
+      "joinedDate": "2024-01-01",
+      "status": "Faol"
+    }
+  ],
+  "attendance": [],
+  "mealPlans": [],
+  "dailyActivities": [],
+  "payments": [],
+  "expenses": [],
+  "payrolls": [],
+  "purchaseRequests": [],
+  "incomes": [],
+  "complaints": [],
+  "publicAnnouncements": [],
+  "auditLogs": [],
+  "kgIngredients": [],
+  "kgRecipes": [],
+  "kgMealGallery": [],
+  "superAdminDocuments": [],
+  "smsLogs": [],
+  "telegramNotifications": [],
+  "activeDevices": [],
+  "failedCheckins": [],
+  "bodyInspections": [],
+  "violenceAlerts": [],
+  "anonymousSosReports": []
+}

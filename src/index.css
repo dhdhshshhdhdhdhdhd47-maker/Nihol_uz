@@ -1,0 +1,178 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Space Grotesk", sans-serif;
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  .animate-shake {
+    animation: shake 0.4s ease-in-out;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Custom scrollbar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.15);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.3);
+}
+
+/* LIGHT MODE ENHANCEMENTS */
+.light {
+  background-color: #f8fafc !important; /* bg-slate-50 */
+  color: #0f172a !important; /* text-slate-900 */
+}
+
+.light header, 
+.light main,
+.light footer,
+.light div,
+.light section,
+.light aside {
+  --tw-text-opacity: 1;
+}
+
+/* Background overrides */
+.light .bg-slate-950 {
+  background-color: #f1f5f9 !important; /* light container base */
+}
+.light .bg-slate-900 {
+  background-color: #ffffff !important; /* clean white card */
+}
+.light .bg-slate-850 {
+  background-color: #e2e8f0 !important; /* slate-200 for subheaders/tables */
+}
+.light .bg-slate-800 {
+  background-color: #cbd5e1 !important; /* slate-300 for active tabs */
+}
+.light .bg-slate-750 {
+  background-color: #94a3b8 !important;
+}
+
+/* Semi-transparent background overrides */
+.light .bg-slate-950\/80 {
+  background-color: rgba(241, 245, 249, 0.85) !important;
+}
+.light .bg-slate-950\/85 {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+.light .bg-slate-950\/95 {
+  background-color: rgba(241, 245, 249, 0.98) !important;
+}
+.light .bg-slate-900\/60 {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+}
+.light .bg-slate-900\/40 {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Text overrides */
+.light .text-slate-100 {
+  color: #1e293b !important; /* slate-800 */
+}
+.light .text-white {
+  color: #0f172a !important; /* slate-900 */
+}
+.light .text-slate-200 {
+  color: #334155 !important; /* slate-700 */
+}
+.light .text-slate-300 {
+  color: #334155 !important; /* slate-700 */
+}
+.light .text-slate-400 {
+  color: #475569 !important; /* slate-600 */
+}
+.light .text-slate-500 {
+  color: #64748b !important; /* slate-500 */
+}
+
+/* Accent text colors with higher contrast for light background */
+.light .text-sky-400 {
+  color: #0284c7 !important; /* sky-600 */
+}
+.light .text-emerald-400 {
+  color: #059669 !important; /* emerald-600 */
+}
+.light .text-rose-400 {
+  color: #dc2626 !important; /* rose-600 */
+}
+.light .text-amber-400 {
+  color: #d97706 !important; /* amber-600 */
+}
+.light .text-indigo-400 {
+  color: #4f46e5 !important; /* indigo-600 */
+}
+
+/* Border overrides */
+.light .border-slate-800 {
+  border-color: #cbd5e1 !important; /* border-slate-300 */
+}
+.light .border-slate-850 {
+  border-color: #e2e8f0 !important; /* border-slate-200 */
+}
+.light .border-slate-700 {
+  border-color: #cbd5e1 !important; /* border-slate-300 */
+}
+.light .border-slate-750 {
+  border-color: #cbd5e1 !important;
+}
+.light .border-slate-700\/60 {
+  border-color: rgba(203, 213, 227, 0.6) !important;
+}
+.light .divide-slate-800\/80 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Input, select, textarea styling */
+.light input, .light select, .light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+.light input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Custom scrollbar in light mode */
+.light .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.1) !important;
+}
+.light .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.2) !important;
+}

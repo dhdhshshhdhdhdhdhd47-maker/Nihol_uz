@@ -1,0 +1,6 @@
+{
+  "name": "Kindergarten AI ERP",
+  "description": "Comprehensive, multi-tenant kindergarten management system featuring integrated dashboards for directors, teachers, chefs, nurses, and accountants, with real-time Telegram Bot updates, Face ID device simulator, and AI meal nutrient analysis.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
