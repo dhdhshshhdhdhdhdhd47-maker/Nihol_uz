@@ -37,12 +37,7 @@ export default function NurseDashboard({ user, childrenList, onRefresh }: NurseD
         const attendance = await attRes.json();
         const todayStr = new Date().toISOString().split("T")[0];
 
-        const groupsMap: Record<string, { total: number; present: number }> = {
-          "Kamalak": { total: 0, present: 0 },
-          "Shodlik": { total: 0, present: 0 },
-          "Quyosh": { total: 0, present: 0 },
-          "Yulduzcha": { total: 0, present: 0 }
-        };
+        const groupsMap: Record<string, { total: number; present: number }> = {};
 
         children.forEach((c: any) => {
           const groupName = c.group || "Kamalak";

@@ -158,11 +158,7 @@ export default function TeacherDashboard({ user, childrenList, onRefresh }: Teac
   const [parentMsgText, setParentMsgText] = useState("");
 
   // Local gallery states and dynamic image uploads
-  const [galleryImages, setGalleryImages] = useState<Array<{ url: string; title: string }>>([
-    { url: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&q=80&w=300", title: "Rasm chizish darsi" },
-    { url: "https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&q=80&w=300", title: "Sehrli koptok o'yini" },
-    { url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300", title: "Ingliz tili darsi" }
-  ]);
+  const [galleryImages, setGalleryImages] = useState<Array<{ url: string; title: string }>>([]);
   const [newImageTag, setNewImageTag] = useState("Bugungi dars");
 
   const handleImageUploadClick = () => {

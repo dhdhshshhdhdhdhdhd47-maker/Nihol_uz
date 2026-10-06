@@ -533,11 +533,7 @@ export default function DirectorDashboard({
     dateRange: string;
   }
 
-  const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([
-    { id: "L-01", staffName: "Nilufar opa Aliyeva", role: "Tarbiyachi", day: "Dushanba", type: "Ta'til", status: "Tasdiqlangan", dateRange: "06-Iyun - 12-Iyun" },
-    { id: "L-02", staffName: "Malika opa Siddiqova", role: "Tarbiyachi yordamchisi", day: "Chorshanba", type: "Kasalik", status: "Tasdiqlangan", dateRange: "08-Iyun - 10-Iyun" },
-    { id: "L-03", staffName: "Dilnoza opa Karimova", role: "Ingliz tili o'qituvchisi", day: "Shanba", type: "Shaxsiy", status: "Kutilmoqda", dateRange: "11-Iyun" },
-  ]);
+  const [leaveRequests, setLeaveRequests] = useState<StaffLeaveRequest[]>([]);
 
   const [newLeaveStaffName, setNewLeaveStaffName] = useState("");
   const [newLeaveDay, setNewLeaveDay] = useState<"Dushanba" | "Seshanba" | "Chorshanba" | "Payshanba" | "Juma" | "Shanba">("Dushanba");
@@ -570,9 +566,9 @@ export default function DirectorDashboard({
   // Get active staff count for a given day
   const getStaffAvailability = (day: string) => {
     const leavesOnDay = leaveRequests.filter(r => r.day === day && r.status === "Tasdiqlangan").length;
-    const totalStaffCount = employeesList.length || 8;
+    const totalStaffCount = employeesList.length;
     return {
-      active: Math.max(2, totalStaffCount - leavesOnDay),
+      active: Math.max(0, totalStaffCount - leavesOnDay),
       total: totalStaffCount
     };
   };
