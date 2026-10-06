@@ -235,6 +235,10 @@ export default function App() {
     localStorage.setItem("cache_v3_clean", "true");
   }
 
+  const [lastSyncTime, setLastSyncTime] = useState<string>(() => {
+    return localStorage.getItem("cache_lastSyncTime") || "";
+  });
+
   const [children, setChildren] = useState<Child[]>(() => {
     try {
       const cached = localStorage.getItem("cache_children");
