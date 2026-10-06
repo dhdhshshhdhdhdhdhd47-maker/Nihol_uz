@@ -17,8 +17,8 @@ export const SuperAdminController = {
   async createKindergarten(req: any, res: any) {
     try {
       const { name, address, directorName, phone, capacity } = req.body;
-      if (!name || !directorName || !phone) {
-        return res.status(400).json({ success: false, message: "Nom, direktor ismi va telefon majburiy!" });
+      if (!name) {
+        return res.status(400).json({ success: false, message: "Bog'cha nomi kiritilishi majburiy!" });
       }
 
       const list = await KindergartenModel.getAll();
@@ -28,8 +28,8 @@ export const SuperAdminController = {
         id: kgId,
         name,
         address: address || "Toshkent shahri",
-        directorName,
-        phone,
+        directorName: directorName || "Tayinlanmagan",
+        phone: phone || "+998900000000",
         capacity: Number(capacity || 100),
         status: "Faol",
         createdDate: new Date().toISOString().split("T")[0]

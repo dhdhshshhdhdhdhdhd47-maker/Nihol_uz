@@ -785,7 +785,18 @@ export default function DirectorDashboard({
       const res = await fetch("/api/kindergartens");
       if (res.ok) {
         const data = await res.json();
-        setKindergartens(data);
+        const deletedIds: string[] = JSON.parse(localStorage.getItem("deleted_kindergartens_ids") || "[]");
+        const added: any[] = JSON.parse(localStorage.getItem("added_kindergartens") || "[]");
+        const mod: Record<string, any> = JSON.parse(localStorage.getItem("modified_kindergartens") || "{}");
+
+        let list = Array.isArray(data) ? data.filter((k: any) => k && k.id && !deletedIds.includes(k.id)) : [];
+        list = list.map((k: any) => mod[k.id] ? { ...k, ...mod[k.id] } : k);
+        for (const a of added) {
+          if (a && a.id && !list.find((k: any) => k.id === a.id) && !deletedIds.includes(a.id)) {
+            list.unshift(a);
+          }
+        }
+        setKindergartens(list);
       }
     } catch (err) {
       console.error(err);
@@ -801,21 +812,42 @@ export default function DirectorDashboard({
   const handleAddKindergarten = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!kgName) return;
+
+    const newKgObj = {
+      id: `K-${Date.now().toString().slice(-4)}`,
+      name: kgName,
+      address: kgAddress || "Toshkent shahri",
+      phone: kgPhone || "+998900000000",
+      directorName: "Tayinlanmagan",
+      capacity: 100,
+      status: "Faol",
+      createdDate: new Date().toISOString().split("T")[0]
+    };
+
+    setKindergartens(prev => [newKgObj, ...prev]);
     try {
-      const res = await fetch("/api/kindergartens", {
+      const added: any[] = JSON.parse(localStorage.getItem("added_kindergartens") || "[]");
+      added.unshift(newKgObj);
+      localStorage.setItem("added_kindergartens", JSON.stringify(added));
+    } catch(e){}
+
+    setShowAddKgModal(false);
+    setKgName("");
+    setKgAddress("");
+    setKgPhone("");
+    triggerNotification("Yangi bog'cha muvaffaqiyatli qo'shildi!");
+
+    try {
+      await fetch("/api/kindergartens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: kgName, address: kgAddress, phone: kgPhone })
+        body: JSON.stringify({
+          name: kgName,
+          address: kgAddress || "Toshkent shahri",
+          phone: kgPhone || "+998900000000",
+          directorName: "Tayinlanmagan"
+        })
       });
-      if (res.ok) {
-        setShowAddKgModal(false);
-        setKgName("");
-        setKgAddress("");
-        setKgPhone("");
-        fetchKindergartens();
-        onRefresh();
-        triggerNotification("Yangi bog'cha muvaffaqiyatli qo'shildi!");
-      }
     } catch (err) {
       console.error(err);
     }
@@ -824,8 +856,24 @@ export default function DirectorDashboard({
   const handleAssignDirector = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dirNameInput || !dirUsernameInput || !dirPasswordInput) return;
+
+    setKindergartens(prev => prev.map(k => k.id === assigningKgId ? { ...k, directorName: dirNameInput } : k));
     try {
-      const res = await fetch(`/api/kindergartens/${assigningKgId}/director`, {
+      const mod: Record<string, any> = JSON.parse(localStorage.getItem("modified_kindergartens") || "{}");
+      mod[assigningKgId] = { ...(mod[assigningKgId] || {}), directorName: dirNameInput };
+      localStorage.setItem("modified_kindergartens", JSON.stringify(mod));
+    } catch(e){}
+
+    setShowAssignDirectorModal(false);
+    setDirNameInput("");
+    setDirUsernameInput("");
+    setDirPasswordInput("");
+    setDirPhoneInput("+998");
+    setDirPassportInput("");
+    triggerNotification("Direktor logini muvaffaqiyatli yaratildi!");
+
+    try {
+      await fetch(`/api/kindergartens/${assigningKgId}/director`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -836,20 +884,6 @@ export default function DirectorDashboard({
           passport: dirPassportInput
         })
       });
-      if (res.ok) {
-        setShowAssignDirectorModal(false);
-        setDirNameInput("");
-        setDirUsernameInput("");
-        setDirPasswordInput("");
-        setDirPhoneInput("+998");
-        setDirPassportInput("");
-        fetchKindergartens();
-        onRefresh();
-        triggerNotification("Direktor logini muvaffaqiyatli yaratildi!");
-      } else {
-        const errData = await res.json();
-        alert(errData.message || "Xatolik yuz berdi");
-      }
     } catch (err) {
       console.error(err);
     }

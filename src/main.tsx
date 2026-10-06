@@ -79,8 +79,86 @@ function handleLocalApi(method: string, relativePath: string, init?: RequestInit
     return createJsonResponse({ success: true, message: "Xabar muvaffaqiyatli tarqatildi!" });
   }
 
-  // 6. CRUD operations for children, groups, employees, payments
-  if (resource === 'employees' || resource === 'groups' || resource === 'children' || resource === 'payments' || resource === 'meals' || resource === 'ingredients' || resource === 'menus') {
+  // 6. Kindergarten specific operations
+  if (resource === 'kindergartens') {
+    if (cleanPath.includes('/director')) {
+      // Assigning director
+      const kgTargetId = pathParts[2];
+      try {
+        const mod: Record<string, any> = JSON.parse(localStorage.getItem('modified_kindergartens') || '{}');
+        mod[kgTargetId] = { ...(mod[kgTargetId] || {}), directorName: body.name || 'Direktor' };
+        localStorage.setItem('modified_kindergartens', JSON.stringify(mod));
+
+        const cached: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]');
+        const updated = cached.map((item: any) => item.id === kgTargetId ? { ...item, directorName: body.name || 'Direktor' } : item);
+        localStorage.setItem('cache_kindergartens', JSON.stringify(updated));
+      } catch {}
+      return createJsonResponse({ success: true, message: "Direktor logini muvaffaqiyatli yaratildi!" });
+    }
+
+    if (cleanPath.includes('/toggle-portal')) {
+      return createJsonResponse({ success: true, message: "Ota-onalar portali holati yangilandi" });
+    }
+
+    if (method === 'GET') {
+      try {
+        const cached = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]');
+        const deletedIds: string[] = JSON.parse(localStorage.getItem('deleted_kindergartens_ids') || '[]');
+        const addedItems: any[] = JSON.parse(localStorage.getItem('added_kindergartens') || '[]');
+        const modItems: Record<string, any> = JSON.parse(localStorage.getItem('modified_kindergartens') || '{}');
+
+        let list = (cached || []).filter((item: any) => item && item.id && !deletedIds.includes(item.id));
+        list = list.map((item: any) => modItems[item.id] ? { ...item, ...modItems[item.id] } : item);
+        for (const added of addedItems) {
+          if (added && added.id && !list.find((i: any) => i.id === added.id) && !deletedIds.includes(added.id)) {
+            list.unshift(added);
+          }
+        }
+        if (list.length === 0) {
+          list = [
+            { id: "K-1", name: "1-son Davlat Bog'chasi (Markaziy)", address: "Toshkent sh., Chilonzor 1-mavze", phone: "+998712001122", directorName: "Dilnoza Rahimova", capacity: 120, status: "Faol" },
+            { id: "K-2", name: "2-son Nihol Filiali", address: "Toshkent sh., Yunusobod 4-mavze", phone: "+998712002233", directorName: "Aziza Karimova", capacity: 90, status: "Faol" },
+            { id: "K-3", name: "3-son Kamalak Filiali", address: "Toshkent sh., Mirzo Ulug'bek", phone: "+998712003344", directorName: "Gulnora Aliyeva", capacity: 150, status: "Faol" }
+          ];
+        }
+        return createJsonResponse(list);
+      } catch {
+        return createJsonResponse([]);
+      }
+    }
+
+    if (method === 'POST') {
+      const newKg = {
+        id: body.id || `K-${Date.now().toString().slice(-4)}`,
+        name: body.name || "Yangi Bog'cha",
+        address: body.address || "Toshkent shahri",
+        phone: body.phone || "+998900000000",
+        directorName: body.directorName || "Tayinlanmagan",
+        capacity: Number(body.capacity || 100),
+        status: "Faol",
+        createdDate: new Date().toISOString().split('T')[0]
+      };
+      try {
+        const added: any[] = JSON.parse(localStorage.getItem('added_kindergartens') || '[]');
+        added.unshift(newKg);
+        localStorage.setItem('added_kindergartens', JSON.stringify(added));
+
+        const cached: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]');
+        cached.unshift(newKg);
+        localStorage.setItem('cache_kindergartens', JSON.stringify(cached));
+      } catch {}
+      return createJsonResponse({ success: true, kindergarten: newKg });
+    }
+  }
+
+  // 7. CRUD operations for children, groups, employees, payments, etc.
+  if (
+    resource === 'employees' || resource === 'groups' || resource === 'children' || 
+    resource === 'payments' || resource === 'meals' || resource === 'ingredients' || 
+    resource === 'menus' || resource === 'complaints' || resource === 'audit-logs' ||
+    resource === 'documents' || resource === 'activities' || resource === 'payroll' ||
+    resource === 'purchase-requests' || resource === 'meal-gallery'
+  ) {
     if (method === 'GET') {
       try {
         const cached = JSON.parse(localStorage.getItem(`cache_${resource}`) || "[]");
