@@ -3055,12 +3055,12 @@ export default function DirectorDashboard({
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                   <span className="text-[9px] font-bold text-cyan-400 uppercase tracking-wider block">📈 Oylik daromad</span>
-                  <div className="text-xl font-black text-cyan-400 mt-1">24,000,000 UZS</div>
+                  <div className="text-xl font-black text-cyan-400 mt-1">0 UZS</div>
                   <span className="text-[10px] text-slate-400">Reja bo'yicha</span>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                   <span className="text-[9px] font-bold text-rose-400 uppercase tracking-wider block">💸 Xarajatlar</span>
-                  <div className="text-xl font-black text-rose-400 mt-1">4,200,000 UZS</div>
+                  <div className="text-xl font-black text-rose-400 mt-1">0 UZS</div>
                   <span className="text-[10px] text-slate-400">Oshxona + Maosh</span>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
@@ -3070,7 +3070,9 @@ export default function DirectorDashboard({
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                   <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider block">🍽 Bugungi menyu</span>
-                  <div className="text-xs font-black text-white mt-1.5 truncate">Somsa, Sho'rva</div>
+                  <div className="text-xs font-black text-white mt-1.5 truncate">
+                    {mealsList && mealsList.length > 0 ? (mealsList[0].lunch || "Rejalashtirilgan") : "Menyu kiritilmagan"}
+                  </div>
                   <span className="text-[10px] text-orange-500">Oqsil & Vitamin</span>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
@@ -3093,12 +3095,16 @@ export default function DirectorDashboard({
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl col-span-2">
                   <span className="text-[9px] font-bold text-sky-400 uppercase tracking-wider block">📢 Oxirgi e'lon</span>
-                  <div className="text-xs font-semibold text-slate-200 mt-1.5 truncate">Yozgi lager 10-iyuldan boshlanadi</div>
+                  <div className="text-xs font-semibold text-slate-200 mt-1.5 truncate">
+                    {publicAnnouncements && publicAnnouncements.length > 0 ? publicAnnouncements[0].title : "E'lonlar mavjud emas"}
+                  </div>
                   <span className="text-[10px] text-slate-500">Telegram orqali tarqatildi</span>
                 </div>
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                   <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider block">🤖 AI Tavsiyasi</span>
-                  <div className="text-xs font-semibold text-emerald-400 mt-1.5 animate-pulse">Davomat 94% ga yetdi</div>
+                  <div className="text-xs font-semibold text-emerald-400 mt-1.5 animate-pulse">
+                    {childrenList.length > 0 ? "Davomat barqaror" : "Ma'lumot yetarli emas"}
+                  </div>
                   <span className="text-[10px] text-slate-400">Tahlil yakuni</span>
                 </div>
               </div>
