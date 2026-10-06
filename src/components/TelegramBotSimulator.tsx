@@ -510,7 +510,7 @@ export default function TelegramBotSimulator({ onRefresh }: { onRefresh?: () => 
               <Bot className="w-9 h-9" />
             </div>
             <div className="space-y-1.5">
-              <h4 className="text-white font-black text-sm uppercase tracking-wider">Nihol AI Parent Bot</h4>
+              <h4 className="text-white font-black text-sm uppercase tracking-wider">@School18Uz_bot</h4>
               <p className="text-slate-400 text-xs leading-relaxed max-w-[240px] mx-auto">
                 Bog'cha va ota-onalar o'rtasidagi aqlli muloqot tizimi. Farzandingiz davomati, ovqati, va tibbiy holatini real vaqtda kuzatib boring.
               </p>
@@ -636,7 +636,7 @@ export default function TelegramBotSimulator({ onRefresh }: { onRefresh?: () => 
                   🌿
                 </div>
                 <div>
-                  <div className="text-xs font-black text-white leading-tight">Nihol AI Bog'cha Boti</div>
+                  <div className="text-xs font-black text-white leading-tight">@School18Uz_bot</div>
                   <span className="text-[10px] text-emerald-400 font-bold block leading-none">bot • online</span>
                 </div>
               </div>
