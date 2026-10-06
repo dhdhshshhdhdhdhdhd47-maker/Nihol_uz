@@ -229,11 +229,27 @@ export default function App() {
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  // Auto-purge stale mock cache once to ensure clean state
-  if (!localStorage.getItem("cache_v3_clean")) {
-    ["cache_children", "cache_groups", "cache_employees", "cache_complaints", "cache_auditLogs", "cache_payments", "cache_meals", "cache_lastSyncTime"].forEach(k => localStorage.removeItem(k));
-    localStorage.setItem("cache_v3_clean", "true");
-  }
+
+  // Helper to merge local user modifications and prevent deleted items from reappearing
+  const applyLocalOverrides = (cacheKey: string, sourceList: any[]): any[] => {
+    try {
+      const deletedIds: string[] = JSON.parse(localStorage.getItem(`deleted_${cacheKey}_ids`) || "[]");
+      const addedItems: any[] = JSON.parse(localStorage.getItem(`added_${cacheKey}`) || "[]");
+      const modItems: Record<string, any> = JSON.parse(localStorage.getItem(`modified_${cacheKey}`) || "{}");
+
+      let result = (sourceList || []).filter(item => item && item.id && !deletedIds.includes(item.id));
+      result = result.map(item => modItems[item.id] ? { ...item, ...modItems[item.id] } : item);
+
+      for (const added of addedItems) {
+        if (added && added.id && !result.find(i => i.id === added.id) && !deletedIds.includes(added.id)) {
+          result.unshift(added);
+        }
+      }
+      return result;
+    } catch {
+      return sourceList || [];
+    }
+  };
 
   const [lastSyncTime, setLastSyncTime] = useState<string>(() => {
     return localStorage.getItem("cache_lastSyncTime") || "";
@@ -242,7 +258,8 @@ export default function App() {
   const [children, setChildren] = useState<Child[]>(() => {
     try {
       const cached = localStorage.getItem("cache_children");
-      return cached ? JSON.parse(cached) : [];
+      const list = cached ? JSON.parse(cached) : [];
+      return applyLocalOverrides("children", list);
     } catch {
       return [];
     }
@@ -250,7 +267,8 @@ export default function App() {
   const [groups, setGroups] = useState<Group[]>(() => {
     try {
       const cached = localStorage.getItem("cache_groups");
-      return cached ? JSON.parse(cached) : [];
+      const list = cached ? JSON.parse(cached) : [];
+      return applyLocalOverrides("groups", list);
     } catch {
       return [];
     }
@@ -258,7 +276,8 @@ export default function App() {
   const [employees, setEmployees] = useState<Employee[]>(() => {
     try {
       const cached = localStorage.getItem("cache_employees");
-      return cached ? JSON.parse(cached) : [];
+      const list = cached ? JSON.parse(cached) : [];
+      return applyLocalOverrides("employees", list);
     } catch {
       return [];
     }
@@ -282,7 +301,8 @@ export default function App() {
   const [payments, setPayments] = useState<Payment[]>(() => {
     try {
       const cached = localStorage.getItem("cache_payments");
-      return cached ? JSON.parse(cached) : [];
+      const list = cached ? JSON.parse(cached) : [];
+      return applyLocalOverrides("payments", list);
     } catch {
       return [];
     }
@@ -468,10 +488,11 @@ export default function App() {
 
     // Non-blocking background updater helper
     const fetchAndCache = async (url: string, cacheKey: string, setter: (val: any) => void) => {
-      const data = await resilientFetch(url, null, !manual);
-      if (data !== null) {
-        setter(data);
-        localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(data));
+      const rawData = await resilientFetch(url, null, !manual);
+      if (rawData !== null) {
+        const mergedData = Array.isArray(rawData) ? applyLocalOverrides(cacheKey, rawData) : rawData;
+        setter(mergedData);
+        localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(mergedData));
       }
     };
 

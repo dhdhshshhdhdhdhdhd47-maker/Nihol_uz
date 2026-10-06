@@ -189,28 +189,33 @@ export default function DirectorDashboard({
     if (!window.confirm("DIQQAT! Tizimdagi barcha bolalar, to'lovlar, guruhlar, shikoyatlar va xodimlar ma'lumotlarini to'liq o'chirib tashlamoqchimisiz? Faqat SuperAdmin hisobi saqlab qolinadi! Bu amalni aslo ortga qaytarib bo'lmaydi.")) {
       return;
     }
+
+    // Clear all persistent overrides and cache
+    [
+      "deleted_employees_ids", "deleted_groups_ids", "deleted_children_ids", "deleted_payments_ids",
+      "added_employees", "added_groups", "added_children", "added_payments",
+      "modified_employees", "modified_groups", "modified_children",
+      "cache_children", "cache_groups", "cache_employees", "cache_payments", "cache_complaints", "cache_auditLogs"
+    ].forEach(k => localStorage.removeItem(k));
+
+    setLocalChildren([]);
+    setLocalGroups([]);
+    setLocalEmployees([]);
+    setLocalPayments([]);
+    if (onUpdateChildren) onUpdateChildren([]);
+    if (onUpdateGroups) onUpdateGroups([]);
+    if (onUpdateEmployees) onUpdateEmployees([]);
+    if (onUpdatePayments) onUpdatePayments([]);
+
+    triggerNotification("Tizim ma'lumotlari muvaffaqiyatli tozalandi!");
     try {
-      const res = await fetch("/api/admin/reset-db", {
-        method: "POST"
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          triggerNotification("Tizim ma'lumotlari muvaffaqiyatli tozalandi!");
-          onRefresh();
-          setTimeout(() => {
-            window.location.reload();
-          }, 1000);
-        } else {
-          triggerNotification(data.message || "Xatolik yuz berdi");
-        }
-      } else {
-        triggerNotification("Tizimni tozalashda xatolik yuz berdi");
-      }
+      await fetch("/api/admin/reset-db", { method: "POST" });
     } catch (e) {
       console.error(e);
-      triggerNotification("Ulanish xatosi.");
     }
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   const fetchGalleryItems = async () => {
@@ -1353,7 +1358,12 @@ export default function DirectorDashboard({
 
     const updated = [newChildObj, ...localChildren];
     setLocalChildren(updated);
-    try { localStorage.setItem("cache_children", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_children", JSON.stringify(updated));
+      const added: any[] = JSON.parse(localStorage.getItem("added_children") || "[]");
+      added.unshift(newChildObj);
+      localStorage.setItem("added_children", JSON.stringify(added));
+    } catch(e){}
     if (onUpdateChildren) onUpdateChildren(updated);
 
     setShowAddChildModal(false);
@@ -1413,7 +1423,21 @@ export default function DirectorDashboard({
     } : c);
 
     setLocalChildren(updated);
-    try { localStorage.setItem("cache_children", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_children", JSON.stringify(updated));
+      const modified: Record<string, any> = JSON.parse(localStorage.getItem("modified_children") || "{}");
+      modified[editingChild.id] = {
+        name: editChildName,
+        birthDate: editChildBirthDate,
+        gender: editChildGender,
+        groupId: editChildGroup,
+        parentName: editChildParentName,
+        parentPhone: editChildParentPhone,
+        telegramChatId: editChildTelegramChatId,
+        status: editChildStatus,
+      };
+      localStorage.setItem("modified_children", JSON.stringify(modified));
+    } catch(e){}
     if (onUpdateChildren) onUpdateChildren(updated);
 
     setShowEditChildModal(false);
@@ -1469,7 +1493,12 @@ export default function DirectorDashboard({
 
     const updated = [newEmpObj, ...localEmployees];
     setLocalEmployees(updated);
-    try { localStorage.setItem("cache_employees", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_employees", JSON.stringify(updated));
+      const added: any[] = JSON.parse(localStorage.getItem("added_employees") || "[]");
+      added.unshift(newEmpObj);
+      localStorage.setItem("added_employees", JSON.stringify(added));
+    } catch(e){}
     if (onUpdateEmployees) onUpdateEmployees(updated);
 
     setShowAddEmpModal(false);
@@ -1538,7 +1567,19 @@ export default function DirectorDashboard({
     } : emp);
 
     setLocalEmployees(updated);
-    try { localStorage.setItem("cache_employees", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_employees", JSON.stringify(updated));
+      const modified: Record<string, any> = JSON.parse(localStorage.getItem("modified_employees") || "{}");
+      modified[editingEmp.id] = {
+        name: editEmpName,
+        username: editEmpUser,
+        role: editEmpRole,
+        phone: editEmpPhone,
+        passport: editEmpPassport,
+        status: editEmpStatus,
+      };
+      localStorage.setItem("modified_employees", JSON.stringify(modified));
+    } catch(e){}
     if (onUpdateEmployees) onUpdateEmployees(updated);
 
     setShowEditEmpModal(false);
@@ -1584,7 +1625,19 @@ export default function DirectorDashboard({
 
     const updated = localEmployees.filter(emp => emp.id !== id);
     setLocalEmployees(updated);
-    try { localStorage.setItem("cache_employees", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_employees", JSON.stringify(updated));
+      const deleted: string[] = JSON.parse(localStorage.getItem("deleted_employees_ids") || "[]");
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+        localStorage.setItem("deleted_employees_ids", JSON.stringify(deleted));
+      }
+      const added: any[] = JSON.parse(localStorage.getItem("added_employees") || "[]");
+      localStorage.setItem("added_employees", JSON.stringify(added.filter(i => i.id !== id)));
+      const modified: Record<string, any> = JSON.parse(localStorage.getItem("modified_employees") || "{}");
+      delete modified[id];
+      localStorage.setItem("modified_employees", JSON.stringify(modified));
+    } catch(e){}
     if (onUpdateEmployees) onUpdateEmployees(updated);
 
     triggerNotification("Xodim muvaffaqiyatli o'chirildi!");
@@ -1619,7 +1672,12 @@ export default function DirectorDashboard({
 
     const updated = [...localGroups, newGroupObj];
     setLocalGroups(updated);
-    try { localStorage.setItem("cache_groups", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_groups", JSON.stringify(updated));
+      const added: any[] = JSON.parse(localStorage.getItem("added_groups") || "[]");
+      added.push(newGroupObj);
+      localStorage.setItem("added_groups", JSON.stringify(added));
+    } catch(e){}
     if (onUpdateGroups) onUpdateGroups(updated);
 
     setShowAddGroupModal(false);
@@ -1668,7 +1726,16 @@ export default function DirectorDashboard({
     } : g);
 
     setLocalGroups(updated);
-    try { localStorage.setItem("cache_groups", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_groups", JSON.stringify(updated));
+      const modified: Record<string, any> = JSON.parse(localStorage.getItem("modified_groups") || "{}");
+      modified[editingGroup.id] = {
+        name: editGroupName,
+        teacherId: editGroupTeacher,
+        capacity: Number(editGroupCapacity) || 25,
+      };
+      localStorage.setItem("modified_groups", JSON.stringify(modified));
+    } catch(e){}
     if (onUpdateGroups) onUpdateGroups(updated);
 
     setShowEditGroupModal(false);
@@ -1702,7 +1769,19 @@ export default function DirectorDashboard({
 
     const updated = localGroups.filter(g => g.id !== id);
     setLocalGroups(updated);
-    try { localStorage.setItem("cache_groups", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_groups", JSON.stringify(updated));
+      const deleted: string[] = JSON.parse(localStorage.getItem("deleted_groups_ids") || "[]");
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+        localStorage.setItem("deleted_groups_ids", JSON.stringify(deleted));
+      }
+      const added: any[] = JSON.parse(localStorage.getItem("added_groups") || "[]");
+      localStorage.setItem("added_groups", JSON.stringify(added.filter(i => i.id !== id)));
+      const modified: Record<string, any> = JSON.parse(localStorage.getItem("modified_groups") || "{}");
+      delete modified[id];
+      localStorage.setItem("modified_groups", JSON.stringify(modified));
+    } catch(e){}
     if (onUpdateGroups) onUpdateGroups(updated);
 
     if (selectedGroupDetail?.id === id) {
@@ -1746,7 +1825,12 @@ export default function DirectorDashboard({
 
     const updated = [newPaymentObj, ...localPayments];
     setLocalPayments(updated);
-    try { localStorage.setItem("cache_payments", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_payments", JSON.stringify(updated));
+      const added: any[] = JSON.parse(localStorage.getItem("added_payments") || "[]");
+      added.unshift(newPaymentObj);
+      localStorage.setItem("added_payments", JSON.stringify(added));
+    } catch(e){}
     if (onUpdatePayments) onUpdatePayments(updated);
 
     setShowAddPaymentModal(false);
@@ -1812,7 +1896,19 @@ export default function DirectorDashboard({
 
     const updated = localChildren.filter(c => c.id !== id);
     setLocalChildren(updated);
-    try { localStorage.setItem("cache_children", JSON.stringify(updated)); } catch(e){}
+    try {
+      localStorage.setItem("cache_children", JSON.stringify(updated));
+      const deleted: string[] = JSON.parse(localStorage.getItem("deleted_children_ids") || "[]");
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+        localStorage.setItem("deleted_children_ids", JSON.stringify(deleted));
+      }
+      const added: any[] = JSON.parse(localStorage.getItem("added_children") || "[]");
+      localStorage.setItem("added_children", JSON.stringify(added.filter(i => i.id !== id)));
+      const modified: Record<string, any> = JSON.parse(localStorage.getItem("modified_children") || "{}");
+      delete modified[id];
+      localStorage.setItem("modified_children", JSON.stringify(modified));
+    } catch(e){}
     if (onUpdateChildren) onUpdateChildren(updated);
 
     triggerNotification("Bola ro'yxatdan o'chirildi.");
