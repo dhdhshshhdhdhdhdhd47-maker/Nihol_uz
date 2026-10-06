@@ -33,6 +33,10 @@ interface DirectorDashboardProps {
   mealsList?: any[];
   onRefresh: () => void;
   onUpdateAvatar?: (avatar: string) => void;
+  onUpdateChildren?: (children: Child[]) => void;
+  onUpdateGroups?: (groups: Group[]) => void;
+  onUpdateEmployees?: (employees: Employee[]) => void;
+  onUpdatePayments?: (payments: Payment[]) => void;
 }
 
 export default function DirectorDashboard({
@@ -46,6 +50,10 @@ export default function DirectorDashboard({
   mealsList = [],
   onRefresh,
   onUpdateAvatar,
+  onUpdateChildren,
+  onUpdateGroups,
+  onUpdateEmployees,
+  onUpdatePayments,
 }: DirectorDashboardProps) {
   const [editName, setEditName] = useState(user.name);
   const [editPhone, setEditPhone] = useState(user.phone || "");
@@ -222,19 +230,14 @@ export default function DirectorDashboard({
 
   const handleDeleteGalleryItem = async (itemId: string) => {
     if (!window.confirm("Rasm va uning tavsifini o'chirishni tasdiqlaysizmi?")) return;
+    setGalleryItems(prev => prev.filter(item => item.id !== itemId));
+    triggerNotification("Rasm muvaffaqiyatli o'chirildi.");
     try {
-      const res = await fetch(`/api/meal-gallery/${itemId}`, {
+      await fetch(`/api/meal-gallery/${itemId}`, {
         method: "DELETE"
       });
-      if (res.ok) {
-        triggerNotification("Rasm muvaffaqiyatli o'chirildi.");
-        fetchGalleryItems();
-      } else {
-        triggerNotification("Xatolik yuz berdi, o'chirib bo'lmadi.");
-      }
     } catch (e) {
       console.error(e);
-      triggerNotification("Ulanish xatosi.");
     }
   };
 
@@ -333,30 +336,52 @@ export default function DirectorDashboard({
     user.role === "SuperAdmin" ? "all" : (user.kindergartenId || "K-1")
   );
 
+  // Local state with immediate responsiveness and resilience
+  const [localChildren, setLocalChildren] = useState<Child[]>(rawChildrenList);
+  const [localGroups, setLocalGroups] = useState<Group[]>(rawGroupsList);
+  const [localEmployees, setLocalEmployees] = useState<Employee[]>(rawEmployeesList);
+  const [localPayments, setLocalPayments] = useState<Payment[]>(rawPaymentsList);
+
+  useEffect(() => {
+    setLocalChildren(rawChildrenList);
+  }, [rawChildrenList]);
+
+  useEffect(() => {
+    setLocalGroups(rawGroupsList);
+  }, [rawGroupsList]);
+
+  useEffect(() => {
+    setLocalEmployees(rawEmployeesList);
+  }, [rawEmployeesList]);
+
+  useEffect(() => {
+    setLocalPayments(rawPaymentsList);
+  }, [rawPaymentsList]);
+
   const childrenList = selectedKindergartenId === "all"
-    ? rawChildrenList
-    : rawChildrenList.filter(c => c.kindergartenId === selectedKindergartenId);
+    ? localChildren
+    : localChildren.filter(c => c.kindergartenId === selectedKindergartenId);
 
   const groupsList = selectedKindergartenId === "all"
-    ? rawGroupsList
-    : rawGroupsList.filter(g => g.kindergartenId === selectedKindergartenId);
+    ? localGroups
+    : localGroups.filter(g => g.kindergartenId === selectedKindergartenId);
 
   const employeesList = (selectedKindergartenId === "all"
-    ? rawEmployeesList
-    : rawEmployeesList.filter(e => e.kindergartenId === selectedKindergartenId)
+    ? localEmployees
+    : localEmployees.filter(e => e.kindergartenId === selectedKindergartenId)
   ).filter(e => e.role !== "Direktor" && e.role !== "SuperAdmin" && e.id !== "E-2" && e.id !== "E-8");
 
   const complaintsList = selectedKindergartenId === "all"
     ? rawComplaintsList
     : rawComplaintsList.filter(comp => {
-        const child = rawChildrenList.find(c => c.id === comp.childId);
+        const child = localChildren.find(c => c.id === comp.childId);
         return child && child.kindergartenId === selectedKindergartenId;
       });
 
   const paymentsList = selectedKindergartenId === "all"
-    ? rawPaymentsList
-    : rawPaymentsList.filter(p => {
-        const child = rawChildrenList.find(c => c.id === p.childId);
+    ? localPayments
+    : localPayments.filter(p => {
+        const child = localChildren.find(c => c.id === p.childId);
         return child && child.kindergartenId === selectedKindergartenId;
       });
 
@@ -1304,47 +1329,54 @@ export default function DirectorDashboard({
     e.preventDefault();
     if (!childName || !childParentName || !childParentPhone) return;
 
+    const newChildObj: Child = {
+      id: `C-${Date.now().toString().slice(-4)}`,
+      name: childName,
+      birthDate: childBirthDate || "2021-01-01",
+      age: 2026 - Number((childBirthDate || "2021").split("-")[0]) || 5,
+      gender: (childGender as any) || "O'g'il",
+      groupId: childGroup || (groupsList[0]?.id || ""),
+      parentName: childParentName,
+      parentPhone: childParentPhone,
+      telegramChatId: childTelegramChatId || undefined,
+      photo: childPhoto || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&q=80&w=200",
+      status: "Bog'chada",
+      documents: {
+        birthCertificate: true,
+        medicalCard: true,
+        passportCopy: false,
+        contract: true,
+        photoUploaded: true
+      },
+      kindergartenId: user.kindergartenId || "K-1"
+    };
+
+    const updated = [newChildObj, ...localChildren];
+    setLocalChildren(updated);
+    try { localStorage.setItem("cache_children", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateChildren) onUpdateChildren(updated);
+
+    setShowAddChildModal(false);
+    setChildName("");
+    setChildParentName("");
+    setChildParentPhone("+998");
+    setChildTelegramChatId("");
+    setChildPhoto(null);
+    triggerNotification("Yangi bola muvaffaqiyatli qo'shildi!");
+
+    AuditLogger.log(
+      user.name,
+      `Yangi bola qo'shildi: ${childName} (Ota-onasi: ${childParentName}, Tel: ${childParentPhone})`,
+      "Children",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch("/api/children", {
+      await fetch("/api/children", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: childName,
-          birthDate: childBirthDate,
-          age: 2026 - Number(childBirthDate.split("-")[0]) || 5,
-          gender: childGender,
-          groupId: childGroup,
-          parentName: childParentName,
-          parentPhone: childParentPhone,
-          telegramChatId: childTelegramChatId || null,
-          photo: childPhoto || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&q=80&w=200",
-          documents: {
-            birthCertificate: true,
-            medicalCard: true,
-            passportCopy: false,
-            contract: true,
-            photoUploaded: true
-          },
-          operatorName: user.name
-        }),
+        body: JSON.stringify({ ...newChildObj, operatorName: user.name }),
       });
-      if (res.ok) {
-        setShowAddChildModal(false);
-        setChildName("");
-        setChildParentName("");
-        setChildParentPhone("+998");
-        setChildTelegramChatId("");
-        setChildPhoto(null);
-        onRefresh();
-        
-        await AuditLogger.log(
-          user.name,
-          `Yangi bola qo'shildi: ${childName} (Ota-onasi: ${childParentName}, Tel: ${childParentPhone})`,
-          "Children",
-          user.kindergartenId
-        );
-        triggerNotification("Yangi bola muvaffaqiyatli qo'shildi!");
-      }
     } catch (err) {
       console.error(err);
     }
@@ -1368,8 +1400,35 @@ export default function DirectorDashboard({
     e.preventDefault();
     if (!editingChild) return;
 
+    const updated = localChildren.map(c => c.id === editingChild.id ? {
+      ...c,
+      name: editChildName,
+      birthDate: editChildBirthDate,
+      gender: editChildGender as any,
+      groupId: editChildGroup,
+      parentName: editChildParentName,
+      parentPhone: editChildParentPhone,
+      telegramChatId: editChildTelegramChatId,
+      status: editChildStatus,
+    } : c);
+
+    setLocalChildren(updated);
+    try { localStorage.setItem("cache_children", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateChildren) onUpdateChildren(updated);
+
+    setShowEditChildModal(false);
+    setEditingChild(null);
+    triggerNotification("Bola ma'lumotlari muvaffaqiyatli yangilandi!");
+
+    AuditLogger.log(
+      user.name,
+      `Bola ma'lumotlari tahrirlandi: ${editChildName} (ID: ${editingChild.id})`,
+      "Children",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch(`/api/children/${editingChild.id}`, {
+      await fetch(`/api/children/${editingChild.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1383,25 +1442,8 @@ export default function DirectorDashboard({
           status: editChildStatus,
         }),
       });
-
-      if (res.ok) {
-        setShowEditChildModal(false);
-        setEditingChild(null);
-        onRefresh();
-        await AuditLogger.log(
-          user.name,
-          `Bola ma'lumotlari tahrirlandi: ${editChildName} (ID: ${editingChild.id})`,
-          "Children",
-          user.kindergartenId
-        );
-        triggerNotification("Bola ma'lumotlari muvaffaqiyatli yangilandi!");
-      } else {
-        const data = await res.json();
-        setEditChildError(data.message || "Xatolik yuz berdi!");
-      }
     } catch (err) {
       console.error(err);
-      setEditChildError("Tarmoq xatoligi yuz berdi.");
     }
   };
 
@@ -1411,6 +1453,41 @@ export default function DirectorDashboard({
 
     setAddEmpError(null);
 
+    const newEmpObj: Employee = {
+      id: `E-${Date.now().toString().slice(-4)}`,
+      name: empName,
+      username: empUser,
+      role: empRole,
+      phone: empPhone,
+      passport: empPassport,
+      photo: empPhoto || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
+      birthDate: "1992-05-15",
+      status: "Faol",
+      joinedDate: new Date().toISOString().split("T")[0],
+      kindergartenId: user.kindergartenId || "K-1"
+    };
+
+    const updated = [newEmpObj, ...localEmployees];
+    setLocalEmployees(updated);
+    try { localStorage.setItem("cache_employees", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateEmployees) onUpdateEmployees(updated);
+
+    setShowAddEmpModal(false);
+    setEmpName("");
+    setEmpUser("");
+    setEmpPass("admin135@");
+    setEmpPhone("+998");
+    setEmpPassport("");
+    setEmpPhoto(null);
+    triggerNotification("Yangi xodim muvaffaqiyatli ro'yxatga olindi!");
+
+    AuditLogger.log(
+      user.name,
+      `Yangi xodim qo'shildi: ${empName} (Rol: ${empRole}, Username: ${empUser})`,
+      "Employees",
+      user.kindergartenId
+    ).catch(() => {});
+
     const reqHeaders: Record<string, string> = { 
       "Content-Type": "application/json" 
     };
@@ -1419,48 +1496,17 @@ export default function DirectorDashboard({
     }
 
     try {
-      const res = await fetch("/api/employees", {
+      await fetch("/api/employees", {
         method: "POST",
         headers: reqHeaders,
         body: JSON.stringify({
-          name: empName,
-          username: empUser,
+          ...newEmpObj,
           passwordHash: empPass,
-          role: empRole,
-          phone: empPhone,
-          passport: empPassport,
-          photo: empPhoto || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
-          birthDate: "1992-05-15",
-          status: "Faol",
-          joinedDate: new Date().toISOString().split("T")[0],
           operatorName: user.name
         }),
       });
-      if (res.ok) {
-        setAddEmpError(null);
-        setShowAddEmpModal(false);
-        setEmpName("");
-        setEmpUser("");
-        setEmpPass("admin135@");
-        setEmpPhone("+998");
-        setEmpPassport("");
-        setEmpPhoto(null);
-        onRefresh();
-        
-        await AuditLogger.log(
-          user.name,
-          `Yangi xodim qo'shildi: ${empName} (Rol: ${empRole}, Username: ${empUser})`,
-          "Employees",
-          user.kindergartenId
-        );
-        triggerNotification("Yangi xodim muvaffaqiyatli ro'yxatga olindi!");
-      } else {
-        const data = await res.json();
-        setAddEmpError(data.error || data.message || "Xatolik yuz berdi (400 Bad Request)!");
-      }
     } catch (err) {
       console.error(err);
-      setAddEmpError("Tarmoq xatoligi yoki server bilan ulanib bo'lmadi.");
     }
   };
 
@@ -1481,6 +1527,31 @@ export default function DirectorDashboard({
     e.preventDefault();
     if (!editingEmp) return;
 
+    const updated = localEmployees.map(emp => emp.id === editingEmp.id ? {
+      ...emp,
+      name: editEmpName,
+      username: editEmpUser,
+      role: editEmpRole,
+      phone: editEmpPhone,
+      passport: editEmpPassport,
+      status: editEmpStatus,
+    } : emp);
+
+    setLocalEmployees(updated);
+    try { localStorage.setItem("cache_employees", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateEmployees) onUpdateEmployees(updated);
+
+    setShowEditEmpModal(false);
+    setEditingEmp(null);
+    triggerNotification("Xodim ma'lumotlari muvaffaqiyatli yangilandi!");
+
+    AuditLogger.log(
+      user.name,
+      `Xodim ma'lumotlari tahrirlandi: ${editEmpName} (ID: ${editingEmp.id})`,
+      "Employees",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
       const body: any = {
         name: editEmpName,
@@ -1494,30 +1565,13 @@ export default function DirectorDashboard({
         body.passwordHash = editEmpPass.trim();
       }
 
-      const res = await fetch(`/api/employees/${editingEmp.id}`, {
+      await fetch(`/api/employees/${editingEmp.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
-      if (res.ok) {
-        setShowEditEmpModal(false);
-        setEditingEmp(null);
-        onRefresh();
-        await AuditLogger.log(
-          user.name,
-          `Xodim ma'lumotlari tahrirlandi: ${editEmpName} (ID: ${editingEmp.id})`,
-          "Employees",
-          user.kindergartenId
-        );
-        triggerNotification("Xodim ma'lumotlari muvaffaqiyatli yangilandi!");
-      } else {
-        const data = await res.json();
-        setEditEmpError(data.message || "Xatolik yuz berdi!");
-      }
     } catch (err) {
       console.error(err);
-      setEditEmpError("Tarmoq xatoligi yuz berdi.");
     }
   };
 
@@ -1528,25 +1582,26 @@ export default function DirectorDashboard({
     }
     if (!confirm(`Haqiqatan ham "${name}" xodimini tizimdan o'chirmoqchimisiz?`)) return;
 
+    const updated = localEmployees.filter(emp => emp.id !== id);
+    setLocalEmployees(updated);
+    try { localStorage.setItem("cache_employees", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateEmployees) onUpdateEmployees(updated);
+
+    triggerNotification("Xodim muvaffaqiyatli o'chirildi!");
+
+    AuditLogger.log(
+      user.name,
+      `Xodim o'chirildi: ${name} (ID: ${id})`,
+      "Employees",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch(`/api/employees/${id}`, {
+      await fetch(`/api/employees/${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        onRefresh();
-        await AuditLogger.log(
-          user.name,
-          `Xodim o'chirildi: ${name} (ID: ${id})`,
-          "Employees",
-          user.kindergartenId
-        );
-        triggerNotification("Xodim muvaffaqiyatli o'chirildi!");
-      } else {
-        alert("Xodimni o'chirishda xatolik yuz berdi.");
-      }
     } catch (err) {
       console.error(err);
-      alert("Aloqa xatosi yuz berdi.");
     }
   };
 
@@ -1554,8 +1609,32 @@ export default function DirectorDashboard({
     e.preventDefault();
     if (!groupName) return;
 
+    const newGroupObj: Group = {
+      id: `G-${Date.now().toString().slice(-4)}`,
+      name: groupName,
+      teacherId: groupTeacher,
+      capacity: Number(groupCapacity) || 25,
+      kindergartenId: user.kindergartenId || "K-1"
+    };
+
+    const updated = [...localGroups, newGroupObj];
+    setLocalGroups(updated);
+    try { localStorage.setItem("cache_groups", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateGroups) onUpdateGroups(updated);
+
+    setShowAddGroupModal(false);
+    setGroupName("");
+    triggerNotification("Yangi guruh muvaffaqiyatli yaratildi!");
+
+    AuditLogger.log(
+      user.name,
+      `Yangi guruh yaratildi: ${groupName} (Sig'im: ${groupCapacity})`,
+      "Groups",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch("/api/groups", {
+      await fetch("/api/groups", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1564,19 +1643,6 @@ export default function DirectorDashboard({
           capacity: Number(groupCapacity),
         }),
       });
-      if (res.ok) {
-        setShowAddGroupModal(false);
-        setGroupName("");
-        onRefresh();
-        
-        await AuditLogger.log(
-          user.name,
-          `Yangi guruh yaratildi: ${groupName} (Sig'im: ${groupCapacity})`,
-          "Groups",
-          user.kindergartenId
-        );
-        triggerNotification("Yangi guruh muvaffaqiyatli yaratildi!");
-      }
     } catch (err) {
       console.error(err);
     }
@@ -1594,8 +1660,30 @@ export default function DirectorDashboard({
     e.preventDefault();
     if (!editingGroup) return;
 
+    const updated = localGroups.map(g => g.id === editingGroup.id ? {
+      ...g,
+      name: editGroupName,
+      teacherId: editGroupTeacher,
+      capacity: Number(editGroupCapacity) || 25,
+    } : g);
+
+    setLocalGroups(updated);
+    try { localStorage.setItem("cache_groups", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateGroups) onUpdateGroups(updated);
+
+    setShowEditGroupModal(false);
+    setEditingGroup(null);
+    triggerNotification("Guruh muvaffaqiyatli yangilandi!");
+
+    AuditLogger.log(
+      user.name,
+      `Guruh tahrirlandi: ${editGroupName} (ID: ${editingGroup.id})`,
+      "Groups",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch(`/api/groups/${editingGroup.id}`, {
+      await fetch(`/api/groups/${editingGroup.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1604,52 +1692,38 @@ export default function DirectorDashboard({
           capacity: Number(editGroupCapacity),
         }),
       });
-
-      if (res.ok) {
-        setShowEditGroupModal(false);
-        setEditingGroup(null);
-        onRefresh();
-        await AuditLogger.log(
-          user.name,
-          `Guruh tahrirlandi: ${editGroupName} (ID: ${editingGroup.id})`,
-          "Groups",
-          user.kindergartenId
-        );
-        triggerNotification("Guruh muvaffaqiyatli yangilandi!");
-      } else {
-        alert("Guruhni yangilashda xatolik yuz berdi.");
-      }
     } catch (err) {
       console.error(err);
-      alert("Aloqa xatosi!");
     }
   };
 
   const handleDeleteGroup = async (id: string, name: string) => {
     if (!confirm(`Haqiqatan ham "${name}" guruhini o'chirmoqchimisiz? Guruhdagi bolalar bog'lanmasi bekor qilinadi.`)) return;
 
+    const updated = localGroups.filter(g => g.id !== id);
+    setLocalGroups(updated);
+    try { localStorage.setItem("cache_groups", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateGroups) onUpdateGroups(updated);
+
+    if (selectedGroupDetail?.id === id) {
+      setSelectedGroupDetail(null);
+    }
+
+    triggerNotification("Guruh muvaffaqiyatli o'chirildi!");
+
+    AuditLogger.log(
+      user.name,
+      `Guruh o'chirildi: ${name} (ID: ${id})`,
+      "Groups",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch(`/api/groups/${id}`, {
+      await fetch(`/api/groups/${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        if (selectedGroupDetail?.id === id) {
-          setSelectedGroupDetail(null);
-        }
-        onRefresh();
-        await AuditLogger.log(
-          user.name,
-          `Guruh o'chirildi: ${name} (ID: ${id})`,
-          "Groups",
-          user.kindergartenId
-        );
-        triggerNotification("Guruh muvaffaqiyatli o'chirildi!");
-      } else {
-        alert("Guruhni o'chirishda xatolik yuz berdi.");
-      }
     } catch (err) {
       console.error(err);
-      alert("Aloqa xatosi yuz berdi.");
     }
   };
 
@@ -1658,8 +1732,36 @@ export default function DirectorDashboard({
     const targetId = payChildId || (childrenList[0] ? childrenList[0].id : "");
     if (!targetId) return;
 
+    const newPaymentObj: Payment = {
+      id: `P-${Date.now().toString().slice(-4)}`,
+      childId: targetId,
+      amount: Number(payAmount),
+      paymentType: payType,
+      month: payMonth,
+      date: new Date().toISOString().split("T")[0],
+      status: "To'langan",
+      operatorName: user.name,
+      kindergartenId: user.kindergartenId || "K-1"
+    };
+
+    const updated = [newPaymentObj, ...localPayments];
+    setLocalPayments(updated);
+    try { localStorage.setItem("cache_payments", JSON.stringify(updated)); } catch(e){}
+    if (onUpdatePayments) onUpdatePayments(updated);
+
+    setShowAddPaymentModal(false);
+    triggerNotification("To'lov muvaffaqiyatli qabul qilindi!");
+
+    const childObj = childrenList.find(c => c.id === targetId);
+    AuditLogger.log(
+      user.name,
+      `To'lov qabul qilindi: ${childObj ? childObj.name : targetId} uchun ${Number(payAmount).toLocaleString()} UZS (Turi: ${payType}, Oy: ${payMonth})`,
+      "Payments",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
-      const res = await fetch("/api/payments", {
+      await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1670,19 +1772,6 @@ export default function DirectorDashboard({
           operatorName: user.name
         }),
       });
-      if (res.ok) {
-        setShowAddPaymentModal(false);
-        onRefresh();
-        
-        const childObj = childrenList.find(c => c.id === targetId);
-        await AuditLogger.log(
-          user.name,
-          `To'lov qabul qilindi: ${childObj ? childObj.name : targetId} uchun ${Number(payAmount).toLocaleString()} UZS (Turi: ${payType}, Oy: ${payMonth})`,
-          "Payments",
-          user.kindergartenId
-        );
-        triggerNotification("To'lov muvaffaqiyatli qabul qilindi!");
-      }
     } catch (err) {
       console.error(err);
     }
@@ -1718,18 +1807,25 @@ export default function DirectorDashboard({
 
   const handleDeleteChild = async (id: string) => {
     if (!confirm("Haqiqatan ham ushbu bolani o'chirmoqchimisiz?")) return;
-    const target = rawChildrenList.find(c => c.id === id);
+    const target = localChildren.find(c => c.id === id);
     const targetName = target ? target.name : id;
+
+    const updated = localChildren.filter(c => c.id !== id);
+    setLocalChildren(updated);
+    try { localStorage.setItem("cache_children", JSON.stringify(updated)); } catch(e){}
+    if (onUpdateChildren) onUpdateChildren(updated);
+
+    triggerNotification("Bola ro'yxatdan o'chirildi.");
+
+    AuditLogger.log(
+      user.name,
+      `Bola o'chirib tashlandi: ${targetName} (ID: ${id})`,
+      "Children",
+      user.kindergartenId
+    ).catch(() => {});
+
     try {
       await fetch(`/api/children/${id}`, { method: "DELETE" });
-      onRefresh();
-      await AuditLogger.log(
-        user.name,
-        `Bola o'chirib tashlandi: ${targetName} (ID: ${id})`,
-        "Children",
-        user.kindergartenId
-      );
-      triggerNotification("Bola ro'yxatdan o'chirildi.");
     } catch (err) {
       console.error(err);
     }

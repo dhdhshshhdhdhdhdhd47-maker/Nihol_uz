@@ -815,6 +815,22 @@ export default function App() {
                     mealsList={meals}
                     onRefresh={loadAllData}
                     onUpdateAvatar={(newAvatar: string) => setCurrentUser({ ...currentUser, avatar: newAvatar })}
+                    onUpdateChildren={(newChildren) => {
+                      setChildren(newChildren);
+                      try { localStorage.setItem("cache_children", JSON.stringify(newChildren)); } catch(e){}
+                    }}
+                    onUpdateGroups={(newGroups) => {
+                      setGroups(newGroups);
+                      try { localStorage.setItem("cache_groups", JSON.stringify(newGroups)); } catch(e){}
+                    }}
+                    onUpdateEmployees={(newEmployees) => {
+                      setEmployees(newEmployees);
+                      try { localStorage.setItem("cache_employees", JSON.stringify(newEmployees)); } catch(e){}
+                    }}
+                    onUpdatePayments={(newPayments) => {
+                      setPayments(newPayments);
+                      try { localStorage.setItem("cache_payments", JSON.stringify(newPayments)); } catch(e){}
+                    }}
                   />
                 )}
 

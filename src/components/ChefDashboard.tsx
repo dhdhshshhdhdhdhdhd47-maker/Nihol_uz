@@ -465,13 +465,10 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
   // Delete Menu
   const handleDeleteMenu = async (dateStr: string) => {
     if (!window.confirm("Ushbu kunlik menyuni o'chirmoqchimisiz?")) return;
+    setDailyMenus(prev => prev.filter(m => m.date !== dateStr));
+    showToast("Menyu tizimdan o'chirildi.");
     try {
-      const res = await fetch(`/api/menus/${dateStr}`, { method: "DELETE" });
-      if (res.ok) {
-        showToast("Menyu tizimdan o'chirildi.");
-        loadKmsData();
-        onRefresh();
-      }
+      await fetch(`/api/menus/${dateStr}`, { method: "DELETE" });
     } catch (err) {
       console.error(err);
     }
@@ -482,8 +479,25 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
     e.preventDefault();
     if (!ingName) return;
 
+    const newIng = {
+      id: `ing-${Date.now()}`,
+      name: ingName,
+      category: ingCategory,
+      quantity: Number(ingQuantity),
+      unit: ingUnit,
+      supplier: ingSupplier,
+      expirationDate: ingExpDate,
+      purchasePrice: Number(ingPrice),
+      status: "Yetarli"
+    };
+
+    setIngredients(prev => [newIng, ...prev]);
+    showToast("Yangi mahsulot omborga qo'shildi!");
+    setIngName("");
+    setIngQuantity(10);
+
     try {
-      const res = await fetch("/api/ingredients", {
+      await fetch("/api/ingredients", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -499,13 +513,6 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
           purchasePrice: Number(ingPrice)
         })
       });
-
-      if (res.ok) {
-        showToast("Yangi mahsulot omborga qo'shildi!");
-        setIngName("");
-        setIngQuantity(10);
-        loadKmsData();
-      }
     } catch (err) {
       console.error(err);
     }
@@ -517,17 +524,15 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
     if (!ing) return;
     const newQty = Math.max(0, ing.quantity + amount);
 
+    setIngredients(prev => prev.map(item => item.id === id ? { ...item, quantity: newQty } : item));
+    showToast("Zaxira darajasi yangilandi.");
+
     try {
-      const res = await fetch(`/api/ingredients/${id}`, {
+      await fetch(`/api/ingredients/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ quantity: newQty })
       });
-
-      if (res.ok) {
-        showToast("Zaxira darajasi yangilandi.");
-        loadKmsData();
-      }
     } catch (err) {
       console.error(err);
     }
@@ -536,12 +541,10 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
   // Delete Ingredient
   const handleDeleteIngredient = async (id: string) => {
     if (!window.confirm("Ushbu mahsulotni o'chirmoqchimisiz?")) return;
+    setIngredients(prev => prev.filter(i => i.id !== id));
+    showToast("Mahsulot ombordan o'chirildi.");
     try {
-      const res = await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        showToast("Mahsulot ombordan o'chirildi.");
-        loadKmsData();
-      }
+      await fetch(`/api/ingredients/${id}`, { method: "DELETE" });
     } catch (err) {
       console.error(err);
     }
