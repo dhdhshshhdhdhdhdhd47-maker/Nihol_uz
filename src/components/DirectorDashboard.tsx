@@ -828,7 +828,24 @@ export default function DirectorDashboard({
   // Modals state
   const [showAddChildModal, setShowAddChildModal] = useState(false);
   const [showAddEmpModal, setShowAddEmpModal] = useState(false);
+  const [showEditEmpModal, setShowEditEmpModal] = useState(false);
+  const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
+  const [editEmpName, setEditEmpName] = useState("");
+  const [editEmpUser, setEditEmpUser] = useState("");
+  const [editEmpPass, setEditEmpPass] = useState("");
+  const [editEmpRole, setEditEmpRole] = useState<any>("Tarbiyachi");
+  const [editEmpPhone, setEditEmpPhone] = useState("");
+  const [editEmpPassport, setEditEmpPassport] = useState("");
+  const [editEmpStatus, setEditEmpStatus] = useState("Faol");
+  const [editEmpError, setEditEmpError] = useState<string | null>(null);
+
   const [showAddGroupModal, setShowAddGroupModal] = useState(false);
+  const [showEditGroupModal, setShowEditGroupModal] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupTeacher, setEditGroupTeacher] = useState("");
+  const [editGroupCapacity, setEditGroupCapacity] = useState("25");
+
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
@@ -1381,6 +1398,92 @@ export default function DirectorDashboard({
     }
   };
 
+  const handleOpenEditEmp = (emp: Employee) => {
+    setEditingEmp(emp);
+    setEditEmpName(emp.name);
+    setEditEmpUser(emp.username);
+    setEditEmpPass("");
+    setEditEmpRole(emp.role);
+    setEditEmpPhone(emp.phone || "");
+    setEditEmpPassport(emp.passport || "");
+    setEditEmpStatus(emp.status || "Faol");
+    setEditEmpError(null);
+    setShowEditEmpModal(true);
+  };
+
+  const handleSaveEditEmp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEmp) return;
+
+    try {
+      const body: any = {
+        name: editEmpName,
+        username: editEmpUser,
+        role: editEmpRole,
+        phone: editEmpPhone,
+        passport: editEmpPassport,
+        status: editEmpStatus,
+      };
+      if (editEmpPass.trim()) {
+        body.passwordHash = editEmpPass.trim();
+      }
+
+      const res = await fetch(`/api/employees/${editingEmp.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        setShowEditEmpModal(false);
+        setEditingEmp(null);
+        onRefresh();
+        await AuditLogger.log(
+          user.name,
+          `Xodim ma'lumotlari tahrirlandi: ${editEmpName} (ID: ${editingEmp.id})`,
+          "Employees",
+          user.kindergartenId
+        );
+        triggerNotification("Xodim ma'lumotlari muvaffaqiyatli yangilandi!");
+      } else {
+        const data = await res.json();
+        setEditEmpError(data.message || "Xatolik yuz berdi!");
+      }
+    } catch (err) {
+      console.error(err);
+      setEditEmpError("Tarmoq xatoligi yuz berdi.");
+    }
+  };
+
+  const handleDeleteEmployee = async (id: string, name: string, role: string) => {
+    if (role === "SuperAdmin") {
+      alert("SuperAdmin hisobini o'chirib bo'lmaydi!");
+      return;
+    }
+    if (!confirm(`Haqiqatan ham "${name}" xodimini tizimdan o'chirmoqchimisiz?`)) return;
+
+    try {
+      const res = await fetch(`/api/employees/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        onRefresh();
+        await AuditLogger.log(
+          user.name,
+          `Xodim o'chirildi: ${name} (ID: ${id})`,
+          "Employees",
+          user.kindergartenId
+        );
+        triggerNotification("Xodim muvaffaqiyatli o'chirildi!");
+      } else {
+        alert("Xodimni o'chirishda xatolik yuz berdi.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Aloqa xatosi yuz berdi.");
+    }
+  };
+
   const handleAddGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupName) return;
@@ -1410,6 +1513,77 @@ export default function DirectorDashboard({
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleOpenEditGroup = (g: Group) => {
+    setEditingGroup(g);
+    setEditGroupName(g.name);
+    setEditGroupTeacher(g.teacherId || "");
+    setEditGroupCapacity(String(g.capacity || 25));
+    setShowEditGroupModal(true);
+  };
+
+  const handleSaveEditGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroup) return;
+
+    try {
+      const res = await fetch(`/api/groups/${editingGroup.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editGroupName,
+          teacherId: editGroupTeacher,
+          capacity: Number(editGroupCapacity),
+        }),
+      });
+
+      if (res.ok) {
+        setShowEditGroupModal(false);
+        setEditingGroup(null);
+        onRefresh();
+        await AuditLogger.log(
+          user.name,
+          `Guruh tahrirlandi: ${editGroupName} (ID: ${editingGroup.id})`,
+          "Groups",
+          user.kindergartenId
+        );
+        triggerNotification("Guruh muvaffaqiyatli yangilandi!");
+      } else {
+        alert("Guruhni yangilashda xatolik yuz berdi.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Aloqa xatosi!");
+    }
+  };
+
+  const handleDeleteGroup = async (id: string, name: string) => {
+    if (!confirm(`Haqiqatan ham "${name}" guruhini o'chirmoqchimisiz? Guruhdagi bolalar bog'lanmasi bekor qilinadi.`)) return;
+
+    try {
+      const res = await fetch(`/api/groups/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        if (selectedGroupDetail?.id === id) {
+          setSelectedGroupDetail(null);
+        }
+        onRefresh();
+        await AuditLogger.log(
+          user.name,
+          `Guruh o'chirildi: ${name} (ID: ${id})`,
+          "Groups",
+          user.kindergartenId
+        );
+        triggerNotification("Guruh muvaffaqiyatli o'chirildi!");
+      } else {
+        alert("Guruhni o'chirishda xatolik yuz berdi.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Aloqa xatosi yuz berdi.");
     }
   };
 
@@ -4527,34 +4701,76 @@ export default function DirectorDashboard({
               </div>
 
               <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-850 border-b border-slate-800 text-slate-400">
-                    <tr>
-                      <th className="py-3 px-4">Xodim F.I.O</th>
-                      <th className="py-3 px-4">Rol / Lavozim</th>
-                      <th className="py-3 px-4">Tizimdagi logini</th>
-                      <th className="py-3 px-4">Telefon</th>
-                      <th className="py-3 px-4">Maosh (Simulated)</th>
-                      <th className="py-3 px-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 text-slate-300">
-                    {employeesList.map(e => (
-                      <tr key={e.id} className="hover:bg-slate-850/30">
-                        <td className="py-3 px-4 font-bold text-white">{e.name}</td>
-                        <td className="py-3 px-4"><span className="bg-slate-800 px-2 py-0.5 rounded font-bold text-[10px]">{e.role}</span></td>
-                        <td className="py-3 px-4 font-mono text-slate-400">{e.username}</td>
-                        <td className="py-3 px-4 font-mono text-slate-400">{e.phone}</td>
-                        <td className="py-3 px-4 font-bold text-emerald-400">3,200,000 UZS</td>
-                        <td className="py-3 px-4">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${e.status === "Faol" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
-                            {e.status}
-                          </span>
-                        </td>
+                {employeesList.length === 0 ? (
+                  <div className="p-12 text-center space-y-3">
+                    <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-white font-bold text-sm">Xodimlar mavjud emas</h4>
+                    <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                      Tizimda hozircha hech qanday xodim ro'yxatga olinmagan. Yangi xodim qo'shish tugmasi orqali oshpaz, tarbiyachi yoki boshqa xodimlarni kiritishingiz mumkin.
+                    </p>
+                    <button
+                      onClick={() => setShowAddEmpModal(true)}
+                      className="bg-emerald-500 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer hover:bg-emerald-400 transition-all inline-block"
+                    >
+                      ➕ Yangi Xodim Qo'shish
+                    </button>
+                  </div>
+                ) : (
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-850 border-b border-slate-800 text-slate-400">
+                      <tr>
+                        <th className="py-3 px-4">Xodim F.I.O</th>
+                        <th className="py-3 px-4">Rol / Lavozim</th>
+                        <th className="py-3 px-4">Tizimdagi logini</th>
+                        <th className="py-3 px-4">Telefon</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-center">Amallar</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800 text-slate-300">
+                      {employeesList.map(e => (
+                        <tr key={e.id} className="hover:bg-slate-850/30">
+                          <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                            <span className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-500/20">
+                              {e.name.charAt(0)}
+                            </span>
+                            {e.name}
+                          </td>
+                          <td className="py-3 px-4"><span className="bg-slate-800 px-2 py-0.5 rounded font-bold text-[10px] text-indigo-300">{e.role}</span></td>
+                          <td className="py-3 px-4 font-mono text-slate-400">{e.username}</td>
+                          <td className="py-3 px-4 font-mono text-slate-400">{e.phone || "-"}</td>
+                          <td className="py-3 px-4">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${e.status === "Faol" ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+                              {e.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleOpenEditEmp(e)}
+                                title="Xodimni tahrirlash"
+                                className="p-1.5 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-700"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              {e.role !== "SuperAdmin" && (
+                                <button
+                                  onClick={() => handleDeleteEmployee(e.id, e.name, e.role)}
+                                  title="Xodimni o'chirish"
+                                  className="p-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-rose-500/20"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
           )}
@@ -4564,48 +4780,82 @@ export default function DirectorDashboard({
             <div className="space-y-4 animate-fade-in">
               <div className="flex justify-between items-center">
                 <h3 className="text-white font-black text-sm uppercase tracking-wider">Kindergarten guruhlari</h3>
-                <button onClick={() => setShowAddGroupModal(true)} className="bg-emerald-500 text-slate-950 px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer">
+                <button onClick={() => setShowAddGroupModal(true)} className="bg-emerald-500 text-slate-950 px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer hover:bg-emerald-400 transition-all">
                   ➕ Guruh yaratish
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {groupsList.map(g => {
-                  const teacher = employeesList.find(e => e.id === g.teacherId);
-                  const count = childrenList.filter(c => c.groupId === g.id).length;
-                  const pct = Math.min(100, (count / g.capacity) * 100);
-                  return (
-                    <div 
-                      key={g.id} 
-                      onClick={() => setSelectedGroupDetail(g)}
-                      className="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 p-5 rounded-3xl space-y-3 cursor-pointer transition-all hover:scale-[1.02] shadow-lg hover:shadow-emerald-500/5 group"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="text-white font-black text-sm group-hover:text-emerald-400 transition-colors">{g.name}</h4>
-                          <span className="text-[10px] text-slate-500 font-mono">ID: {g.id}</span>
+              {groupsList.length === 0 ? (
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-12 text-center space-y-3">
+                  <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                    <Grid className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-white font-bold text-sm">Guruhlar mavjud emas</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                    Tizimda hozircha hech qanday guruh mavjud emas. Bolalarni taqsimlash uchun yangi guruh yarating.
+                  </p>
+                  <button
+                    onClick={() => setShowAddGroupModal(true)}
+                    className="bg-emerald-500 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl cursor-pointer hover:bg-emerald-400 transition-all inline-block"
+                  >
+                    ➕ Yangi Guruh Yaratish
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {groupsList.map(g => {
+                    const teacher = employeesList.find(e => e.id === g.teacherId);
+                    const count = childrenList.filter(c => c.groupId === g.id).length;
+                    const pct = Math.min(100, (count / (g.capacity || 1)) * 100);
+                    return (
+                      <div 
+                        key={g.id} 
+                        className="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 p-5 rounded-3xl space-y-3 transition-all hover:scale-[1.01] shadow-lg hover:shadow-emerald-500/5 group relative"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div onClick={() => setSelectedGroupDetail(g)} className="cursor-pointer">
+                            <h4 className="text-white font-black text-sm group-hover:text-emerald-400 transition-colors">{g.name}</h4>
+                            <span className="text-[10px] text-slate-500 font-mono">ID: {g.id}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleOpenEditGroup(g); }}
+                              title="Guruhni tahrirlash"
+                              className="p-1 hover:bg-slate-800 text-indigo-400 rounded cursor-pointer transition-colors"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteGroup(g.id, g.name); }}
+                              title="Guruhni o'chirish"
+                              className="p-1 hover:bg-rose-500/10 text-rose-400 rounded cursor-pointer transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <span className="bg-indigo-500/10 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded">Active</span>
-                      </div>
-                      <div className="p-3 bg-slate-950 rounded-2xl border border-slate-850 text-slate-300">
-                        <span className="text-[9px] font-bold text-slate-500 uppercase">Tarbiyachi</span>
-                        <div className="font-bold text-white text-xs mt-0.5">{teacher ? teacher.name : "Noma'lum"}</div>
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">{teacher ? teacher.phone : "-"}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px] text-slate-400">
-                          <span>Bolalar sig'imi:</span> 
-                          <span className="text-white font-bold">{count}/{g.capacity} ta bola</span>
+                        <div onClick={() => setSelectedGroupDetail(g)} className="cursor-pointer space-y-3">
+                          <div className="p-3 bg-slate-950 rounded-2xl border border-slate-850 text-slate-300">
+                            <span className="text-[9px] font-bold text-slate-500 uppercase">Tarbiyachi</span>
+                            <div className="font-bold text-white text-xs mt-0.5">{teacher ? teacher.name : "Biriktirilmagan"}</div>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">{teacher ? teacher.phone : "-"}</div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-[11px] text-slate-400">
+                              <span>Bolalar sig'imi:</span> 
+                              <span className="text-white font-bold">{count}/{g.capacity} ta bola</span>
+                            </div>
+                            <div className="w-full bg-slate-950 h-2 rounded-full border border-slate-850 overflow-hidden">
+                              <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{width: `${pct}%`}}></div>
+                            </div>
+                            <span className="text-[9px] text-indigo-400 block pt-1 group-hover:underline">Batafsil ma'lumot ➔</span>
+                          </div>
                         </div>
-                        <div className="w-full bg-slate-950 h-2 rounded-full border border-slate-850 overflow-hidden">
-                          <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{width: `${pct}%`}}></div>
-                        </div>
-                        <span className="text-[9px] text-indigo-400 block pt-1 group-hover:underline">Batafsil ma'lumot ➔</span>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Group Detail Modal */}
               {selectedGroupDetail && (
@@ -5007,105 +5257,130 @@ export default function DirectorDashboard({
           )}
 
           {/* 7. PAYMENTS COMPONENT */}
-          {activeTab === "payments" && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-white font-black text-sm uppercase tracking-wider">To'lovlar Qabuli va Qarzdorlar jadvali</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={exportPaymentsCSV}
-                    className="bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer border border-slate-700 transition-all flex items-center gap-1"
-                  >
-                    📥 CSV yuklab olish
-                  </button>
-                  <button onClick={() => setShowAddPaymentModal(true)} className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-all">
-                    ➕ Yangi To'lov Qabul qilish
-                  </button>
+          {activeTab === "payments" && (() => {
+            const calculatedTotalFees = paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const calculatedDebt = totalDebtAmount || 0;
+            return (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-white font-black text-sm uppercase tracking-wider">To'lovlar Qabuli va Qarzdorlar jadvali</h3>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={exportPaymentsCSV}
+                      className="bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs px-3 py-1.5 rounded-xl cursor-pointer border border-slate-700 transition-all flex items-center gap-1"
+                    >
+                      📥 CSV yuklab olish
+                    </button>
+                    <button onClick={() => setShowAddPaymentModal(true)} className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-3 py-1.5 rounded-xl font-bold text-xs cursor-pointer transition-all">
+                      ➕ Yangi To'lov Qabul qilish
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl text-center">
-                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Jami yig'ilgan to'lovlar (Iyul)</span>
-                  <div className="text-2xl font-black text-emerald-400 mt-2">{(totalReceivedFees).toLocaleString()} UZS</div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl text-center">
+                    <span className="text-slate-500 text-[10px] uppercase font-bold block">Jami yig'ilgan to'lovlar</span>
+                    <div className="text-2xl font-black text-emerald-400 mt-2">{calculatedTotalFees.toLocaleString()} UZS</div>
+                  </div>
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl text-center">
+                    <span className="text-slate-500 text-[10px] uppercase font-bold block">Mavjud qarzdorliklar</span>
+                    <div className="text-2xl font-black text-rose-400 mt-2">{calculatedDebt.toLocaleString()} UZS</div>
+                  </div>
+                  <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl text-center">
+                    <span className="text-slate-500 text-[10px] uppercase font-bold block">Qarzdor ota-onalar</span>
+                    <div className="text-2xl font-black text-yellow-400 mt-2">{debtParentsCount} ta</div>
+                  </div>
                 </div>
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl text-center">
-                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Mavjud qarzdorliklar</span>
-                  <div className="text-2xl font-black text-rose-400 mt-2">{(totalDebtAmount).toLocaleString()} UZS</div>
-                </div>
-                <div className="bg-slate-900 border border-slate-800 p-5 rounded-3xl text-center">
-                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Barcha Qarzdor ota-onalar</span>
-                  <div className="text-2xl font-black text-yellow-400 mt-2">{debtParentsCount} ta</div>
-                </div>
-              </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-850 border-b border-slate-800 text-slate-400">
-                    <tr>
-                      <th className="py-3 px-4">Bola ismi</th>
-                      <th className="py-3 px-4">Sana</th>
-                      <th className="py-3 px-4">Oylik (Month)</th>
-                      <th className="py-3 px-4">To'lov turi</th>
-                      <th className="py-3 px-4 text-right">Summa</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 text-slate-300">
-                    {paymentsList.map(p => (
-                      <tr key={p.id} className="hover:bg-slate-850/30 font-mono">
-                        <td className="py-3 px-4 font-bold text-white">{childrenList.find(c => c.id === p.childId)?.name || "Bola"}</td>
-                        <td className="py-3 px-4">{p.date}</td>
-                        <td className="py-3 px-4">{p.month} oyi</td>
-                        <td className="py-3 px-4"><span className="bg-slate-800 px-2 py-0.5 rounded">{p.paymentType}</span></td>
-                        <td className="py-3 px-4 text-right text-emerald-400 font-bold">+{p.amount.toLocaleString()} UZS</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                  {paymentsList.length === 0 ? (
+                    <div className="p-12 text-center space-y-3">
+                      <div className="w-12 h-12 bg-slate-800 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                        <CreditCard className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-white font-bold text-sm">To'lovlar mavjud emas</h4>
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                        Hozircha hech qanday to'lov qabul qilinmagan. Ota-onalar to'lov qilganda "➕ Yangi To'lov Qabul qilish" tugmasi orqali kiriting.
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-850 border-b border-slate-800 text-slate-400">
+                        <tr>
+                          <th className="py-3 px-4">Bola ismi</th>
+                          <th className="py-3 px-4">Sana</th>
+                          <th className="py-3 px-4">Oylik (Month)</th>
+                          <th className="py-3 px-4">To'lov turi</th>
+                          <th className="py-3 px-4 text-right">Summa</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800 text-slate-300">
+                        {paymentsList.map(p => (
+                          <tr key={p.id} className="hover:bg-slate-850/30 font-mono">
+                            <td className="py-3 px-4 font-bold text-white">{childrenList.find(c => c.id === p.childId)?.name || "Bola"}</td>
+                            <td className="py-3 px-4">{p.date}</td>
+                            <td className="py-3 px-4">{p.month} oyi</td>
+                            <td className="py-3 px-4"><span className="bg-slate-800 px-2 py-0.5 rounded">{p.paymentType}</span></td>
+                            <td className="py-3 px-4 text-right text-emerald-400 font-bold">+{Number(p.amount).toLocaleString()} UZS</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* 8. FINANCE COMPONENT */}
-          {activeTab === "finance" && (
-            <div className="space-y-4">
-              <h3 className="text-white font-black text-sm uppercase tracking-wider">Moliya va Budjet tahlili</h3>
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Jami Daromad</span>
-                    <p className="text-xl font-black text-emerald-400 mt-1">{(totalReceivedFees).toLocaleString()} UZS</p>
-                  </div>
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Maoshlar</span>
-                    <p className="text-xl font-black text-rose-400 mt-1">3,200,000 UZS</p>
-                  </div>
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Oshxona xarajati</span>
-                    <p className="text-xl font-black text-rose-400 mt-1">1,000,000 UZS</p>
-                  </div>
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase">Sof foyda</span>
-                    <p className="text-xl font-black text-cyan-400 mt-1">{(totalReceivedFees - 4200000).toLocaleString()} UZS</p>
-                  </div>
-                </div>
+          {activeTab === "finance" && (() => {
+            const calculatedTotalFees = paymentsList.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const calculatedSalaries = employeesList.filter(e => e.role !== "SuperAdmin").length * 2500000;
+            const calculatedKitchen = (mealsList?.length || 0) * 200000;
+            const calculatedProfit = calculatedTotalFees - (calculatedSalaries + calculatedKitchen);
 
-                <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-xs">
-                  <h4 className="text-white font-bold mb-3">Rejali xarajatlar diagrammasi</h4>
-                  <div className="space-y-2">
-                    <div className="flex justify-between"><span>Xodimlar oylik maoshi:</span> <span className="font-bold">60%</span></div>
-                    <div className="w-full bg-slate-900 h-2 rounded-full"><div className="bg-indigo-500 h-full rounded-full" style={{width: "60%"}}></div></div>
+            return (
+              <div className="space-y-4 animate-fade-in">
+                <h3 className="text-white font-black text-sm uppercase tracking-wider">Moliya va Budjet tahlili</h3>
+                <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">Jami Daromad</span>
+                      <p className="text-xl font-black text-emerald-400 mt-1">{calculatedTotalFees.toLocaleString()} UZS</p>
+                    </div>
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">Maoshlar (Xodimlar soni: {employeesList.filter(e => e.role !== "SuperAdmin").length})</span>
+                      <p className="text-xl font-black text-rose-400 mt-1">{calculatedSalaries.toLocaleString()} UZS</p>
+                    </div>
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">Oshxona xarajati</span>
+                      <p className="text-xl font-black text-rose-400 mt-1">{calculatedKitchen.toLocaleString()} UZS</p>
+                    </div>
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 font-bold uppercase">Sof foyda (Balans)</span>
+                      <p className={`text-xl font-black mt-1 ${calculatedProfit >= 0 ? "text-cyan-400" : "text-rose-400"}`}>
+                        {calculatedProfit.toLocaleString()} UZS
+                      </p>
+                    </div>
+                  </div>
 
-                    <div className="flex justify-between"><span>Oziq-ovqat va tozalik:</span> <span className="font-bold">25%</span></div>
-                    <div className="w-full bg-slate-900 h-2 rounded-full"><div className="bg-emerald-500 h-full rounded-full" style={{width: "25%"}}></div></div>
+                  <div className="p-4 bg-slate-950 rounded-2xl border border-slate-850 text-xs">
+                    <h4 className="text-white font-bold mb-3">Rejali xarajatlar diagrammasi</h4>
+                    <div className="space-y-2">
+                      <div className="flex justify-between"><span>Xodimlar oylik maoshi:</span> <span className="font-bold">{calculatedSalaries > 0 ? "60%" : "0%"}</span></div>
+                      <div className="w-full bg-slate-900 h-2 rounded-full"><div className="bg-indigo-500 h-full rounded-full" style={{width: calculatedSalaries > 0 ? "60%" : "0%"}}></div></div>
 
-                    <div className="flex justify-between"><span>Texnik va kommunal:</span> <span className="font-bold">15%</span></div>
-                    <div className="w-full bg-slate-900 h-2 rounded-full"><div className="bg-amber-500 h-full rounded-full" style={{width: "15%"}}></div></div>
+                      <div className="flex justify-between"><span>Oziq-ovqat va tozalik:</span> <span className="font-bold">{calculatedKitchen > 0 ? "25%" : "0%"}</span></div>
+                      <div className="w-full bg-slate-900 h-2 rounded-full"><div className="bg-emerald-500 h-full rounded-full" style={{width: calculatedKitchen > 0 ? "25%" : "0%"}}></div></div>
+
+                      <div className="flex justify-between"><span>Texnik va kommunal:</span> <span className="font-bold">15%</span></div>
+                      <div className="w-full bg-slate-900 h-2 rounded-full"><div className="bg-amber-500 h-full rounded-full" style={{width: "15%"}}></div></div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* 9. MEDICAL COMPONENT */}
           {activeTab === "medical" && (
@@ -6664,6 +6939,209 @@ export default function DirectorDashboard({
               >
                 XODIMNI SAQLASH
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT EMPLOYEE MODAL */}
+      {showEditEmpModal && editingEmp && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-white font-bold text-sm uppercase tracking-wider">Xodim Ma'lumotlarini Tahrirlash</h3>
+                <span className="text-[10px] text-slate-400 font-mono">ID: {editingEmp.id}</span>
+              </div>
+              <button onClick={() => { setShowEditEmpModal(false); setEditingEmp(null); }} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editEmpError && (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-xl font-bold text-xs">
+                ⚠️ {editEmpError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditEmp} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="text-slate-400 uppercase font-semibold">Xodim F.I.O:</label>
+                <input
+                  type="text"
+                  required
+                  value={editEmpName}
+                  onChange={(e) => setEditEmpName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Tizim Logini (Username):</label>
+                  <input
+                    type="text"
+                    required
+                    value={editEmpUser}
+                    onChange={(e) => setEditEmpUser(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Lavozim / Rol:</label>
+                  <select
+                    value={editEmpRole}
+                    onChange={(e) => setEditEmpRole(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                  >
+                    <option value="Tarbiyachi">Tarbiyachi</option>
+                    <option value="Oshpaz">Oshpaz</option>
+                    <option value="Hamshira">Hamshira</option>
+                    <option value="Buxgalter">Buxgalter</option>
+                    <option value="Tozalovchi">Tozalovchi</option>
+                    <option value="SuperAdmin">SuperAdmin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Telefon:</label>
+                  <input
+                    type="text"
+                    required
+                    value={editEmpPhone}
+                    onChange={(e) => setEditEmpPhone(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Pasport Seriyasi:</label>
+                  <input
+                    type="text"
+                    value={editEmpPassport}
+                    onChange={(e) => setEditEmpPassport(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm uppercase font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Yangi Parol (Agar o'zgartirilsa):</label>
+                  <input
+                    type="password"
+                    value={editEmpPass}
+                    onChange={(e) => setEditEmpPass(e.target.value)}
+                    placeholder="O'zgartirishsiz qoldirish"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Status:</label>
+                  <select
+                    value={editEmpStatus}
+                    onChange={(e) => setEditEmpStatus(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                  >
+                    <option value="Faol">Faol</option>
+                    <option value="Ta'tilda">Ta'tilda</option>
+                    <option value="Nofaol">Nofaol</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditEmpModal(false); setEditingEmp(null); }}
+                  className="w-1/3 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer shadow-lg shadow-indigo-600/20"
+                >
+                  O'ZGARISHLARNI SAQLASH
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT GROUP MODAL */}
+      {showEditGroupModal && editingGroup && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-white font-bold text-sm uppercase tracking-wider">Guruhni Tahrirlash</h3>
+                <span className="text-[10px] text-slate-400 font-mono">ID: {editingGroup.id}</span>
+              </div>
+              <button onClick={() => { setShowEditGroupModal(false); setEditingGroup(null); }} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditGroup} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="text-slate-400 uppercase font-semibold">Guruh Nomi:</label>
+                <input
+                  type="text"
+                  required
+                  value={editGroupName}
+                  onChange={(e) => setEditGroupName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-400 uppercase font-semibold">Biriktirilgan Tarbiyachi:</label>
+                <select
+                  value={editGroupTeacher}
+                  onChange={(e) => setEditGroupTeacher(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                >
+                  <option value="">Tarbiyachi tanlanmagan</option>
+                  {employeesList.filter(e => e.role === "Tarbiyachi").map(e => (
+                    <option key={e.id} value={e.id}>{e.name} ({e.phone || "No phone"})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-400 uppercase font-semibold">Maksimal Sig'im (Bolalar soni):</label>
+                <input
+                  type="number"
+                  min="5"
+                  max="60"
+                  required
+                  value={editGroupCapacity}
+                  onChange={(e) => setEditGroupCapacity(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditGroupModal(false); setEditingGroup(null); }}
+                  className="w-1/3 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer shadow-lg shadow-indigo-600/20"
+                >
+                  GURUHNI SAQLASH
+                </button>
+              </div>
             </form>
           </div>
         </div>

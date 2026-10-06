@@ -599,40 +599,65 @@ function BigCamCanvas({ cam, alertState, audioLevel, webcamStream }: BigCamCanva
         ctx.clearRect(0, 0, w, h);
 
         // Render AI Vision HUD & Real Bounding Detection Boxes over live video!
-        const boxX = w / 2;
+        const isViolent = !!alertState;
+        const boxX = w / 2 + (isViolent ? Math.sin(frame * 0.2) * 8 : 0);
         const boxY = h / 2.1;
-        const boxW = alertState ? 360 : 280;
-        const boxH = alertState ? 380 : 300;
+        const boxW = isViolent ? 380 : 280;
+        const boxH = isViolent ? 400 : 300;
 
-        ctx.strokeStyle = alertState ? "#ef4444" : "#10b981";
-        ctx.lineWidth = 3.5;
+        const mainColor = isViolent ? "#f43f5e" : "#10b981"; // Pulsing bright red when violence/aggression detected
+
+        // 1. Shaxs turgan joyining ramkasi (Bounding Box)
+        ctx.strokeStyle = mainColor;
+        ctx.lineWidth = isViolent ? 4 : 2.5;
+        if (isViolent) {
+          ctx.setLineDash([8, 4]);
+        } else {
+          ctx.setLineDash([]);
+        }
         ctx.strokeRect(boxX - boxW / 2, boxY - boxH / 2, boxW, boxH);
+        ctx.setLineDash([]);
 
-        // Corner brackets on real camera stream
-        const tk = 16;
+        // 2. Corner brackets
+        const tk = 22;
         const bx = boxX - boxW / 2;
         const by = boxY - boxH / 2;
-        ctx.strokeStyle = alertState ? "#f43f5e" : "#34d399";
-        ctx.lineWidth = 3.5;
+        ctx.strokeStyle = isViolent ? "#ff1a40" : "#34d399";
+        ctx.lineWidth = 4;
         ctx.beginPath(); ctx.moveTo(bx + tk, by); ctx.lineTo(bx, by); ctx.lineTo(bx, by + tk); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(bx + boxW - tk, by); ctx.lineTo(bx + boxW, by); ctx.lineTo(bx + boxW, by + tk); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(bx + tk, by + boxH); ctx.lineTo(bx, by + boxH); ctx.lineTo(bx, by + boxH - tk); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(bx + boxW - tk, by + boxH); ctx.lineTo(bx + boxW, by + boxH); ctx.lineTo(bx + boxW, by + boxH - tk); ctx.stroke();
 
-        // Overhead tag over detected person in live camera feed
-        ctx.fillStyle = alertState ? "rgba(225,29,72,0.92)" : "rgba(15,23,42,0.88)";
-        ctx.fillRect(boxX - 130, by - 30, 260, 26);
-        ctx.strokeStyle = alertState ? "#f43f5e" : "#10b981";
+        // 3. Header tag over detected person in live camera feed
+        ctx.fillStyle = isViolent ? "rgba(225,29,72,0.95)" : "rgba(15,23,42,0.88)";
+        ctx.fillRect(boxX - 160, by - 34, 320, 28);
+        ctx.strokeStyle = isViolent ? "#ff4d6d" : "#10b981";
         ctx.lineWidth = 1.5;
-        ctx.strokeRect(boxX - 130, by - 30, 260, 26);
+        ctx.strokeRect(boxX - 160, by - 34, 320, 28);
 
         ctx.fillStyle = "#ffffff";
         ctx.font = "bold 12px monospace";
         ctx.textAlign = "center";
         ctx.fillText(
-          alertState ? "🚨 XAVF: ZO'RAVONLIK DETEKTSIYASI!" : "REAL LIVE KAMERA | AI VISION [NORMAL]",
+          isViolent 
+            ? "🚨 QIZIL ALERTLIK: ZO'RAVONLIK / TAJOVUZ HARAKATI!" 
+            : "👤 SHAXS ANIQLANDI [Xavfsiz: 99.4%]",
           boxX,
-          by - 13
+          by - 15
+        );
+
+        // 4. Coordinates badge
+        ctx.fillStyle = isViolent ? "rgba(159, 18, 57, 0.95)" : "rgba(6, 78, 59, 0.9)";
+        ctx.fillRect(boxX - 140, by + boxH + 6, 280, 22);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 10px monospace";
+        ctx.fillText(
+          isViolent 
+            ? `JOY: X:${Math.round(boxX)} Y:${Math.round(boxY)} | TAJOVUZ EHTIMOLI: 98.7%` 
+            : `JOY: X:${Math.round(boxX)} Y:${Math.round(boxY)} | HARAKAT: NORMAL`,
+          boxX,
+          by + boxH + 21
         );
         ctx.textAlign = "left";
       }

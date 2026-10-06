@@ -144,6 +144,20 @@ export const EmployeeModel = {
       return dbState.employees[idx];
     }
     return null;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (isPg()) {
+      const res = await query("DELETE FROM employees WHERE id = $1 RETURNING id", [id]);
+      return (res.rowCount || 0) > 0;
+    }
+    const idx = dbState.employees.findIndex(e => e.id === id);
+    if (idx !== -1) {
+      dbState.employees.splice(idx, 1);
+      saveLocalDb();
+      return true;
+    }
+    return false;
   }
 };
 
@@ -167,6 +181,14 @@ export const GroupModel = {
     return dbState.groups;
   },
 
+  async getById(id: string): Promise<any> {
+    if (isPg()) {
+      const res = await query("SELECT * FROM groups WHERE id = $1", [id]);
+      return res.rows.length ? toCamelCase(res.rows[0]) : null;
+    }
+    return dbState.groups.find(g => g.id === id) || null;
+  },
+
   async create(g: any): Promise<any> {
     if (isPg()) {
       const mapped = {
@@ -187,6 +209,41 @@ export const GroupModel = {
     dbState.groups.push(g);
     saveLocalDb();
     return g;
+  },
+
+  async update(id: string, updates: any): Promise<any> {
+    if (isPg()) {
+      const mappedUpdates = toSnakeCase(updates);
+      const keys = Object.keys(mappedUpdates).filter(k => k !== "id" && k !== "created_at");
+      if (keys.length === 0) return this.getById(id);
+      
+      const setClause = keys.map((k, i) => `${k} = $${i + 2}`).join(", ");
+      const values = keys.map(k => mappedUpdates[k]);
+      const q = `UPDATE groups SET ${setClause} WHERE id = $1 RETURNING *`;
+      const res = await query(q, [id, ...values]);
+      return res.rows.length ? toCamelCase(res.rows[0]) : null;
+    }
+    const idx = dbState.groups.findIndex(g => g.id === id);
+    if (idx !== -1) {
+      dbState.groups[idx] = { ...dbState.groups[idx], ...updates };
+      saveLocalDb();
+      return dbState.groups[idx];
+    }
+    return null;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (isPg()) {
+      const res = await query("DELETE FROM groups WHERE id = $1 RETURNING id", [id]);
+      return (res.rowCount || 0) > 0;
+    }
+    const idx = dbState.groups.findIndex(g => g.id === id);
+    if (idx !== -1) {
+      dbState.groups.splice(idx, 1);
+      saveLocalDb();
+      return true;
+    }
+    return false;
   }
 };
 

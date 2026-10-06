@@ -52,5 +52,61 @@ export const GroupController = {
       console.error("[Group] create error:", err);
       res.status(500).json({ success: false, message: "Guruhni ochishda xatolik yuz berdi." });
     }
+  },
+
+  async update(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const group = await GroupModel.getById(id);
+      if (!group) {
+        return res.status(404).json({ success: false, message: "Guruh topilmadi!" });
+      }
+
+      const updated = await GroupModel.update(id, req.body);
+
+      await AuditLogModel.create({
+        id: `LOG-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: "Direktor / SuperAdmin",
+        action: `Guruh tahrirlandi: ${updated.name} (ID: ${id})`,
+        ip: req.ip || "127.0.0.1",
+        device: "Management Portal",
+        kindergartenId: updated.kindergartenId || "K-1"
+      });
+
+      broadcastDataUpdate("children");
+      res.json({ success: true, group: updated });
+    } catch (err: any) {
+      console.error("[Group] update error:", err);
+      res.status(500).json({ success: false, message: "Guruh ma'lumotlarini yangilashda xatolik!" });
+    }
+  },
+
+  async delete(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const group = await GroupModel.getById(id);
+      if (!group) {
+        return res.status(404).json({ success: false, message: "Guruh topilmadi!" });
+      }
+
+      await GroupModel.delete(id);
+
+      await AuditLogModel.create({
+        id: `LOG-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: "Direktor / SuperAdmin",
+        action: `Guruh o'chirildi: ${group.name} (ID: ${id})`,
+        ip: req.ip || "127.0.0.1",
+        device: "Management Portal",
+        kindergartenId: group.kindergartenId || "K-1"
+      });
+
+      broadcastDataUpdate("children");
+      res.json({ success: true, message: "Guruh muvaffaqiyatli o'chirildi!" });
+    } catch (err: any) {
+      console.error("[Group] delete error:", err);
+      res.status(500).json({ success: false, message: "Guruhni o'chirishda xatolik yuz berdi!" });
+    }
   }
 };

@@ -66,18 +66,18 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
 
   // Core stats loaded from API
   const [stats, setStats] = useState<any>({
-    todayBreakfast: "Sutli suli bo'tqasi",
-    todayLunch: "Frikadelkali sho'rva",
-    todayAfternoonSnack: "Mevalar va keks",
-    todayDinner: "Tvorogli zapekanka",
-    totalMealsPrepared: 120,
-    childrenEatingToday: 38,
-    specialDietChildren: 4,
-    allergyAlerts: 3,
-    lowStockIngredients: 2,
-    purchaseRequests: 2,
-    kitchenTasks: 5,
-    aiNutritionScore: 94
+    todayBreakfast: "Kiritilmagan",
+    todayLunch: "Kiritilmagan",
+    todayAfternoonSnack: "Kiritilmagan",
+    todayDinner: "Kiritilmagan",
+    totalMealsPrepared: 0,
+    childrenEatingToday: 0,
+    specialDietChildren: 0,
+    allergyAlerts: 0,
+    lowStockIngredients: 0,
+    purchaseRequests: 0,
+    kitchenTasks: 0,
+    aiNutritionScore: 100
   });
 
   const [chartsData, setChartsData] = useState<any>({

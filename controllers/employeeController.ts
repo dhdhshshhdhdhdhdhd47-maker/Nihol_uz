@@ -83,6 +83,34 @@ export const EmployeeController = {
     }
   },
 
+  async delete(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const emp = await EmployeeModel.getById(id);
+      if (!emp) {
+        return res.status(404).json({ success: false, message: "Xodim topilmadi!" });
+      }
+
+      await EmployeeModel.delete(id);
+
+      await AuditLogModel.create({
+        id: `LOG-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: "Direktor / SuperAdmin",
+        action: `Xodim o'chirildi: ${emp.name} (ID: ${id})`,
+        ip: req.ip || "127.0.0.1",
+        device: "Management Portal",
+        kindergartenId: emp.kindergartenId || "K-1"
+      });
+
+      broadcastDataUpdate("children");
+      res.json({ success: true, message: "Xodim muvaffaqiyatli o'chirildi!" });
+    } catch (err: any) {
+      console.error("[Employee] delete error:", err);
+      res.status(500).json({ success: false, message: "Xodimni o'chirishda xatolik yuz berdi!" });
+    }
+  },
+
   async getPayroll(req: any, res: any) {
     try {
       const kgId = getKgId(req);

@@ -7,6 +7,7 @@ const router = Router();
 router.get("/employees", validateKindergartenData, EmployeeController.getAll);
 router.post("/employees", validateKindergartenData, EmployeeController.create);
 router.put("/employees/:id", validateKindergartenData, EmployeeController.update);
+router.delete("/employees/:id", validateKindergartenData, EmployeeController.delete);
 
 // Payroll operations
 router.get("/payroll", validateKindergartenData, EmployeeController.getPayroll);
