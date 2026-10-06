@@ -3071,7 +3071,9 @@ export default function DirectorDashboard({
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
                   <span className="text-[9px] font-bold text-orange-400 uppercase tracking-wider block">🍽 Bugungi menyu</span>
                   <div className="text-xs font-black text-white mt-1.5 truncate">
-                    {mealsList && mealsList.length > 0 ? (mealsList[0].lunch || "Rejalashtirilgan") : "Menyu kiritilmagan"}
+                    {mealsList && mealsList.length > 0 
+                      ? (typeof mealsList[0]?.lunch === "string" ? mealsList[0].lunch : (mealsList[0]?.lunch?.title || "Rejalashtirilgan")) 
+                      : "Menyu kiritilmagan"}
                   </div>
                   <span className="text-[10px] text-orange-500">Oqsil & Vitamin</span>
                 </div>
