@@ -827,6 +827,17 @@ export default function DirectorDashboard({
 
   // Modals state
   const [showAddChildModal, setShowAddChildModal] = useState(false);
+  const [showEditChildModal, setShowEditChildModal] = useState(false);
+  const [editingChild, setEditingChild] = useState<Child | null>(null);
+  const [editChildName, setEditChildName] = useState("");
+  const [editChildBirthDate, setEditChildBirthDate] = useState("");
+  const [editChildGender, setEditChildGender] = useState<"O'g'il" | "Qiz">("O'g'il");
+  const [editChildGroup, setEditChildGroup] = useState("");
+  const [editChildParentName, setEditChildParentName] = useState("");
+  const [editChildParentPhone, setEditChildParentPhone] = useState("");
+  const [editChildTelegramChatId, setEditChildTelegramChatId] = useState("");
+  const [editChildStatus, setEditChildStatus] = useState("Bog'chada");
+  const [editChildError, setEditChildError] = useState<string | null>(null);
   const [showAddEmpModal, setShowAddEmpModal] = useState(false);
   const [showEditEmpModal, setShowEditEmpModal] = useState(false);
   const [editingEmp, setEditingEmp] = useState<Employee | null>(null);
@@ -1336,6 +1347,61 @@ export default function DirectorDashboard({
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleOpenEditChild = (c: Child) => {
+    setEditingChild(c);
+    setEditChildName(c.name);
+    setEditChildBirthDate(c.birthDate || "");
+    setEditChildGender(c.gender as any || "O'g'il");
+    setEditChildGroup(c.groupId || "");
+    setEditChildParentName(c.parentName || "");
+    setEditChildParentPhone(c.parentPhone || "");
+    setEditChildTelegramChatId(c.telegramChatId || "");
+    setEditChildStatus(c.status || "Bog'chada");
+    setEditChildError(null);
+    setShowEditChildModal(true);
+  };
+
+  const handleSaveEditChild = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChild) return;
+
+    try {
+      const res = await fetch(`/api/children/${editingChild.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editChildName,
+          birthDate: editChildBirthDate,
+          gender: editChildGender,
+          groupId: editChildGroup,
+          parentName: editChildParentName,
+          parentPhone: editChildParentPhone,
+          telegramChatId: editChildTelegramChatId,
+          status: editChildStatus,
+        }),
+      });
+
+      if (res.ok) {
+        setShowEditChildModal(false);
+        setEditingChild(null);
+        onRefresh();
+        await AuditLogger.log(
+          user.name,
+          `Bola ma'lumotlari tahrirlandi: ${editChildName} (ID: ${editingChild.id})`,
+          "Children",
+          user.kindergartenId
+        );
+        triggerNotification("Bola ma'lumotlari muvaffaqiyatli yangilandi!");
+      } else {
+        const data = await res.json();
+        setEditChildError(data.message || "Xatolik yuz berdi!");
+      }
+    } catch (err) {
+      console.error(err);
+      setEditChildError("Tarmoq xatoligi yuz berdi.");
     }
   };
 
@@ -2246,9 +2312,11 @@ export default function DirectorDashboard({
   const sickChildren = childrenList.filter((c) => c.status === "Sababli").length;
   const totalStaff = employeesList.length;
   const activeStaff = employeesList.filter(e => e.status === "Faol").length;
-  const totalReceivedFees = paymentsList.reduce((acc, curr) => acc + curr.amount, 0);
-  const debtParentsCount = childrenList.length - paymentsList.filter(p => p.month === "Iyul").length;
-  const totalDebtAmount = Math.max(0, debtParentsCount * 800000);
+  const totalReceivedFees = paymentsList.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+  const debtParentsCount = totalChildren > 0 
+    ? Math.max(0, totalChildren - paymentsList.filter(p => p.month === "Iyul").length) 
+    : 0;
+  const totalDebtAmount = 0; // Boshlang'ich sun'iy qarzdorliklar olib tashlandi
   const activeComplaints = complaintsList.filter((c) => c.status === "Yangi").length;
 
   // AI-driven Predicted Attendance and Scheduling Forecast for the Upcoming Week
@@ -3959,12 +4027,12 @@ export default function DirectorDashboard({
                     <span className="text-[10px] text-slate-400 font-bold uppercase">⚖️ Daromad va Xarajat</span>
                     <div className="h-20 space-y-2 flex flex-col justify-center">
                       <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-400"><span>Daromad</span><span className="text-emerald-400 font-bold">24,000,000 UZS</span></div>
-                        <div className="w-full bg-slate-800 h-1.5 rounded-full"><div className="bg-emerald-500 h-full rounded-full" style={{width: "82%"}}></div></div>
+                        <div className="flex justify-between text-[10px] text-slate-400"><span>Daromad</span><span className="text-emerald-400 font-bold">{totalReceivedFees.toLocaleString()} UZS</span></div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full"><div className="bg-emerald-500 h-full rounded-full" style={{width: totalReceivedFees > 0 ? "100%" : "0%"}}></div></div>
                       </div>
                       <div className="space-y-1">
-                        <div className="flex justify-between text-[10px] text-slate-400"><span>Xarajat</span><span className="text-rose-400 font-bold">4,200,000 UZS</span></div>
-                        <div className="w-full bg-slate-800 h-1.5 rounded-full"><div className="bg-rose-500 h-full rounded-full" style={{width: "22%"}}></div></div>
+                        <div className="flex justify-between text-[10px] text-slate-400"><span>Xarajat</span><span className="text-rose-400 font-bold">{(employeesList.length * 2500000).toLocaleString()} UZS</span></div>
+                        <div className="w-full bg-slate-800 h-1.5 rounded-full"><div className="bg-rose-500 h-full rounded-full" style={{width: employeesList.length > 0 ? "100%" : "0%"}}></div></div>
                       </div>
                     </div>
                   </div>
@@ -4100,11 +4168,10 @@ export default function DirectorDashboard({
                       <div className="h-64 w-full bg-slate-950/40 p-4 rounded-2xl border border-slate-850">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={[
-                              { period: "Aprel", "To'langan": 18500000, "Qisman": 3500000, "Qarzdorlik": 2000000 },
-                              { period: "May", "To'langan": 20200000, "Qisman": 2800000, "Qarzdorlik": 1000000 },
-                              { period: "Iyun", "To'langan": 22400000, "Qisman": 1600000, "Qarzdorlik": 800000 },
-                              { period: "Iyul (Joriy)", "To'langan": totalReceivedFees, "Qisman": Math.round(totalReceivedFees * 0.15), "Qarzdorlik": debtParentsCount * 1200000 }
+                            data={paymentsList.length > 0 ? [
+                              { period: "Joriy davr", "To'langan": totalReceivedFees, "Qisman": 0, "Qarzdorlik": totalDebtAmount }
+                            ] : [
+                              { period: "Joriy davr", "To'langan": 0, "Qisman": 0, "Qarzdorlik": 0 }
                             ]}
                             margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                           >
@@ -4173,7 +4240,7 @@ export default function DirectorDashboard({
                     <span className="text-indigo-400 font-bold block uppercase tracking-wide text-[10px]">📊 Tahliliy xulosalar & Optimizatsiya tavsiyalari:</span>
                     <ul className="list-disc list-inside space-y-1 text-slate-400">
                       <li><b>Qatnov tahlili:</b> Yoz oylarida bolalarning qatnov darajasi o'rtacha <b>{Math.round((childrenInKgarten / Math.max(1, totalChildren)) * 100)}%</b> ni tashkil etmoqda, bu kutilgan ko'rsatkichdan biroz yuqoriroq.</li>
-                      <li><b>Moliyaviy muvozanat:</b> To'lov statistikasi shuni ko'rsatadiki, jami qarzdorlik <b>{(debtParentsCount * 1200000).toLocaleString()} UZS</b> ni tashkil etadi. Tizim orqali ota-onalarga bulk sms/telegram bildirishnomalari yuborilishi to'lov intizomini 12% ga yaxshiladi.</li>
+                      <li><b>Moliyaviy muvozanat:</b> Jami to'lovlar miqdori <b>{totalReceivedFees.toLocaleString()} UZS</b>, mavjud qarzdorliklar <b>{totalDebtAmount.toLocaleString()} UZS</b>.</li>
                       <li><b>Kadrlar yuklamasi:</b> Guruhlar kesimidagi optimal xodim-bola yuklamaasi <b>1 : 10</b> atrofida bo'lishi lozim. Ayrim guruhlarda yuklama 12 dan oshganligi sababli qo'shimcha tarbiyachilarni jalb qilish tavsiya etiladi.</li>
                     </ul>
                   </div>
@@ -4352,6 +4419,13 @@ export default function DirectorDashboard({
                               <td className="py-3 px-4 text-center">
                                 <div className="flex items-center justify-center gap-1.5">
                                   <button
+                                    onClick={() => handleOpenEditChild(c)}
+                                    title="Bolani tahrirlash"
+                                    className="p-1.5 hover:bg-slate-800 text-indigo-400 hover:text-indigo-300 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-700"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
                                     onClick={() => {
                                       setSelectedChildId(c.id);
                                       setChildDetailTab("general");
@@ -4362,7 +4436,8 @@ export default function DirectorDashboard({
                                   </button>
                                   <button
                                     onClick={() => handleDeleteChild(c.id)}
-                                    className="p-1.5 hover:bg-slate-800 text-rose-400 rounded transition-colors cursor-pointer"
+                                    title="Bolani o'chirish"
+                                    className="p-1.5 hover:bg-rose-500/10 text-rose-400 hover:text-rose-300 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-rose-500/20"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -6791,6 +6866,148 @@ export default function DirectorDashboard({
               >
                 SAQLASH & QO'SHISH
               </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT CHILD MODAL */}
+      {showEditChildModal && editingChild && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-850 rounded-3xl p-6 w-full max-w-lg shadow-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div>
+                <h3 className="text-white font-bold text-sm uppercase tracking-wider">Bola Ma'lumotlarini Tahrirlash</h3>
+                <span className="text-[10px] text-slate-400 font-mono">ID: {editingChild.id}</span>
+              </div>
+              <button onClick={() => { setShowEditChildModal(false); setEditingChild(null); }} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {editChildError && (
+              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-xl font-bold text-xs">
+                ⚠️ {editChildError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditChild} className="space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="text-slate-400 uppercase font-semibold">F.I.O (Ismi va Familiyasi):</label>
+                <input
+                  type="text"
+                  required
+                  value={editChildName}
+                  onChange={(e) => setEditChildName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Tug'ilgan kuni:</label>
+                  <input
+                    type="date"
+                    required
+                    value={editChildBirthDate}
+                    onChange={(e) => setEditChildBirthDate(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Jinsi:</label>
+                  <select
+                    value={editChildGender}
+                    onChange={(e) => setEditChildGender(e.target.value as any)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                  >
+                    <option value="O'g'il">O'g'il</option>
+                    <option value="Qiz">Qiz</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-400 uppercase font-semibold">Biriktiriladigan guruh:</label>
+                <select
+                  value={editChildGroup}
+                  onChange={(e) => setEditChildGroup(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                >
+                  <option value="">Guruh tanlanmagan</option>
+                  {groupsList.map(g => (
+                    <option key={g.id} value={g.id}>{g.name} (Sig'im: {g.capacity})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Ota-ona Ismi:</label>
+                  <input
+                    type="text"
+                    required
+                    value={editChildParentName}
+                    onChange={(e) => setEditChildParentName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Telefon Raqami:</label>
+                  <input
+                    type="text"
+                    required
+                    value={editChildParentPhone}
+                    onChange={(e) => setEditChildParentPhone(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Telegram Chat ID:</label>
+                  <input
+                    type="text"
+                    value={editChildTelegramChatId}
+                    onChange={(e) => setEditChildTelegramChatId(e.target.value)}
+                    placeholder="Masalan: 559482710"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-slate-400 uppercase font-semibold">Davomat Holati:</label>
+                  <select
+                    value={editChildStatus}
+                    onChange={(e) => setEditChildStatus(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2 px-3 text-white outline-none focus:border-indigo-500 text-sm"
+                  >
+                    <option value="Bog'chada">Bog'chada</option>
+                    <option value="Kelmagan">Kelmagan</option>
+                    <option value="Sababli">Sababli</option>
+                    <option value="Kechikdi">Kechikdi</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditChildModal(false); setEditingChild(null); }}
+                  className="w-1/3 bg-slate-800 hover:bg-slate-750 text-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer"
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs cursor-pointer shadow-lg shadow-indigo-600/20"
+                >
+                  O'ZGARISHLARNI SAQLASH
+                </button>
+              </div>
             </form>
           </div>
         </div>

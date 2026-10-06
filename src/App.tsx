@@ -420,30 +420,16 @@ export default function App() {
 
   // Load all data from API
   const loadAllData = async (manual = false) => {
-    // 1. Prevent background syncs when document is hidden (Visibility check)
-    if (!manual && document.visibilityState === "hidden") {
-      console.log("[SWR] Skipping loadAllData because page is hidden");
-      return;
-    }
-
-    const now = Date.now();
-    const timeSinceLastFetch = now - lastFetchTimeRef.current;
-
-    // 2. Rate-limiting / Stale-While-Revalidate check
-    // If it's not a manual sync and we fetched very recently (e.g. less than 2 seconds ago), skip to avoid spamming the backend/re-rendering
-    if (!manual && timeSinceLastFetch < 2000) {
-      console.log("[SWR] Skipping fetch, using stale data (throttled under 2s)");
-      return;
-    }
-
-    const isFirstLoad = children.length === 0 && employees.length === 0;
     if (manual) {
       setIsRefreshing(true);
-    } else if (isFirstLoad) {
+      apiCache.clear();
+    }
+    const isFirstLoad = children.length === 0 && employees.length === 0;
+    if (isFirstLoad) {
       setLoadingData(true);
     }
 
-    lastFetchTimeRef.current = now;
+    lastFetchTimeRef.current = Date.now();
 
     const kgId = currentUser?.kindergartenId || "";
     const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -456,9 +442,9 @@ export default function App() {
     }
 
     // Helper for resilient fetch to handle specific error codes (401, 403, 404, 500)
-    const resilientFetch = async (url: string, defaultValue: any = null, useCache = true) => {
+    const resilientFetch = async (url: string, defaultValue: any = null, useCache = false) => {
       if (useCache && !manual) {
-        const cached = apiCache.get(url, 15000); // 15 seconds TTL
+        const cached = apiCache.get(url, 4000);
         if (cached) {
           return cached;
         }
@@ -467,15 +453,6 @@ export default function App() {
         const res = await fetch(url, { headers });
         if (!res.ok) {
           console.warn(`[SWR] HTTP Error ${res.status} returned for: ${url}`);
-          if (res.status === 401) {
-            console.error("[SWR] Unauthorized (401) - session expired.");
-          } else if (res.status === 403) {
-            console.error("[SWR] Forbidden (403) - access restricted.");
-          } else if (res.status === 404) {
-            console.error("[SWR] Not Found (404) - API route doesn't exist.");
-          } else if (res.status >= 500) {
-            console.error(`[SWR] Server Error (${res.status}) - remote server issue.`);
-          }
           return defaultValue;
         }
         const data = await res.json();
@@ -509,18 +486,7 @@ export default function App() {
         fetchAndCache(`/api/meals?kindergartenId=${kgId}`, "meals", setMeals),
       ];
 
-      if (manual || isFirstLoad) {
-        // Wait blockingly if user requested manual refresh, or if there is no cached data at all
-        await Promise.allSettled(promises);
-      } else {
-        // Completely non-blocking background update for smoother UI navigation
-        Promise.allSettled(promises).then(() => {
-          const syncTime = new Date().toLocaleTimeString();
-          setLastSyncTime(syncTime);
-          localStorage.setItem("cache_lastSyncTime", syncTime);
-        });
-        return;
-      }
+      await Promise.allSettled(promises);
 
       const syncTime = new Date().toLocaleTimeString();
       setLastSyncTime(syncTime);
