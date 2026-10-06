@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import http from "http";
 import dotenv from "dotenv";
 import { WebSocketServer } from "ws";
@@ -75,10 +76,21 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req: any, res: any) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      app.use(express.static(distPath));
+      app.get("*", (req: any, res: any) => {
+        res.sendFile(indexPath);
+      });
+    } else {
+      app.get("/", (req: any, res: any) => {
+        res.json({
+          status: "online",
+          message: "🍃 Bog'cham.uz Backend SaaS Server is Live!",
+          timestamp: new Date().toISOString()
+        });
+      });
+    }
   }
 
   server.listen(PORT, "0.0.0.0", () => {
