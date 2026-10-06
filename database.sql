@@ -222,13 +222,7 @@ CREATE INDEX idx_audit_logs_kg ON audit_logs(kindergarten_id);
 
 -- SEED DATA
 INSERT INTO kindergartens (id, name, address, phone, director_name, director_username) VALUES
-('K-1', 'Nihol AI Bog''chasi (Chilonzor filiali)', 'Toshkent sh., Chilonzor tumani, 5-mavze', '+998711234567', 'Karimov Shaxzod Baxtiyorovich', 'director'),
-('K-2', 'Kamalak G''unchalari Bog''chasi (Yunusobod filiali)', 'Toshkent sh., Yunusobod tumani, 11-mavze', '+998717654321', 'Siddiqov Elyor', 'director2');
+('K-1', 'Nihol AI Bog''chasi', 'Toshkent shahar', '+998711234567', 'SuperAdmin', 'superadmin');
 
 INSERT INTO employees (id, username, password_hash, role, name, phone, passport, birth_date, joined_date, status, kindergarten_id) VALUES
-('E-1', 'superadmin', 'admin135@', 'SuperAdmin', 'Asqarov Jamshid', '+998909990000', 'AA1234567', '1988-05-15', '2024-01-01', 'Faol', NULL),
-('E-2', 'director', 'admin135@', 'Direktor', 'Karimov Shaxzod Baxtiyorovich', '+998901112233', 'AB9876543', '1982-11-22', '2024-03-10', 'Faol', 'K-1'),
-('E-3', 'teacher', 'admin135@', 'Tarbiyachi', 'Rahimova Nodira Shavkatovna', '+998974445566', 'AC1112223', '1994-08-05', '2024-09-01', 'Faol', 'K-1'),
-('E-4', 'chef', 'admin135@', 'Oshpaz', 'Abdullayev Rustam G''ofurovich', '+998946667788', 'AD3334445', '1975-02-14', '2024-05-01', 'Faol', 'K-1'),
-('E-5', 'nurse', 'admin135@', 'Hamshira', 'Soliqova Nilufar Alisherovna', '+998937778899', 'AE5556667', '1990-12-10', '2024-06-15', 'Faol', 'K-1'),
-('E-6', 'accountant', 'admin135@', 'Buxgalter', 'Xalilov Azizbek Husanovich', '+998912223344', 'AF7778889', '1985-04-18', '2024-04-01', 'Faol', 'K-1');
+('E-1', 'superadmin', 'admin135@', 'SuperAdmin', 'Asqarov Jamshid (SuperAdmin)', '+998909990000', 'AA1234567', '1990-01-01', '2024-01-01', 'Faol', NULL);

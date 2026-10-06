@@ -229,9 +229,12 @@ export default function App() {
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<string>(() => {
-    return localStorage.getItem("cache_lastSyncTime") || "";
-  });
+  // Auto-purge stale mock cache once to ensure clean state
+  if (!localStorage.getItem("cache_v3_clean")) {
+    ["cache_children", "cache_groups", "cache_employees", "cache_complaints", "cache_auditLogs", "cache_payments", "cache_meals", "cache_lastSyncTime"].forEach(k => localStorage.removeItem(k));
+    localStorage.setItem("cache_v3_clean", "true");
+  }
+
   const [children, setChildren] = useState<Child[]>(() => {
     try {
       const cached = localStorage.getItem("cache_children");
@@ -612,59 +615,7 @@ export default function App() {
     const isTelegramEnvironment = !!(window as any).Telegram?.WebApp?.initData;
     
     if (!isTelegramEnvironment && !skipTelegramFallback) {
-      return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans relative overflow-hidden">
-          {/* Ambient blurred background glow */}
-          <div className="absolute -top-40 -left-40 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
-          
-          <div className="bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl max-w-md w-full text-center space-y-6 shadow-2xl relative z-10">
-            <div className="w-16 h-16 bg-sky-500/10 border border-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-              <Smartphone className="w-8 h-8" />
-            </div>
-            
-            <div className="space-y-2">
-              <h2 className="text-xl font-black text-white tracking-tight">Ota-ona Portali (Telegram WebApp)</h2>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Ushbu modul Telegram ota-onalari uchun mini-ilova (Web App) sifatida ishlashga mo'ljallangan va faqat Telegram ichida to'liq xavfsiz ishlaydi.
-              </p>
-            </div>
-
-            <div className="bg-slate-950 p-4 rounded-2xl border border-slate-850 text-[11px] text-slate-400 text-left space-y-1.5 leading-relaxed">
-              <div className="font-bold text-white text-xs flex items-center gap-1.5 mb-1 text-sky-400">
-                <Send className="w-3.5 h-3.5" /> Telegram Mini-ilova xususiyatlari:
-              </div>
-              <p>• Farzandingizning Face ID datchiklaridan o'tishi bo'yicha tezkor bildirishnomalar.</p>
-              <p>• Kunlik taomnoma, dars jadvallari va shifokor tavsiyalari.</p>
-              <p>• To'lovlar tarixi va SMS hisob-fakturalari monitoringi.</p>
-            </div>
-
-            <div className="flex flex-col gap-2.5 pt-2">
-              <a
-                href="https://t.me/School18Uz_bot"
-                target="_blank"
-                rel="noreferrer"
-                className="w-full bg-sky-500 hover:bg-sky-400 text-slate-950 py-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-sky-500/10"
-              >
-                <Send className="w-4 h-4" />
-                Telegramda ochish (Botga o'tish)
-              </a>
-              
-              <button
-                type="button"
-                onClick={() => setSkipTelegramFallback(true)}
-                className="w-full bg-slate-800 hover:bg-slate-750 text-slate-300 py-3 rounded-xl font-bold text-xs transition-all"
-              >
-                Brauzerda davom etish (Sinxronizatsiya testi)
-              </button>
-            </div>
-            
-            <div className="text-[10px] text-slate-500">
-              Mobil foydalanuvchilar Telegram ichidagi rasmiy tugmalar orqali avtomatik ravishda to'g'ri integratsiyadan o'tadilar.
-            </div>
-          </div>
-        </div>
-      );
+      setSkipTelegramFallback(true);
     }
 
     return (

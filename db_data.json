@@ -10,17 +10,7 @@
     }
   ],
   "children": [],
-  "groups": [
-    {
-      "id": "G-1",
-      "name": "1-Guruh (Asosiy)",
-      "teacherId": "",
-      "room": "101-xona",
-      "capacity": 30,
-      "ageRange": "3-6 yosh",
-      "kindergartenId": "K-1"
-    }
-  ],
+  "groups": [],
   "employees": [
     {
       "id": "E-1",

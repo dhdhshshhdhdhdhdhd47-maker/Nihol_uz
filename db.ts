@@ -200,17 +200,7 @@ try {
         status: "Faol"
       }
     ];
-    dbState.groups = [
-      {
-        id: "G-1",
-        name: "1-Guruh (Asosiy)",
-        teacherId: "",
-        room: "101-xona",
-        capacity: 30,
-        ageRange: "3-6 yosh",
-        kindergartenId: "K-1"
-      }
-    ];
+    dbState.groups = [];
     saveLocalDb();
     console.log("[DB] Local database successfully seeded with minimal Admin accounts!");
   }
