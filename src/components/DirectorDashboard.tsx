@@ -3096,7 +3096,7 @@ export default function DirectorDashboard({
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl col-span-2">
                   <span className="text-[9px] font-bold text-sky-400 uppercase tracking-wider block">📢 Oxirgi e'lon</span>
                   <div className="text-xs font-semibold text-slate-200 mt-1.5 truncate">
-                    {publicAnnouncements && publicAnnouncements.length > 0 ? publicAnnouncements[0].title : "E'lonlar mavjud emas"}
+                    E'lonlar mavjud emas
                   </div>
                   <span className="text-[10px] text-slate-500">Telegram orqali tarqatildi</span>
                 </div>
