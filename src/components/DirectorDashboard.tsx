@@ -818,7 +818,8 @@ export default function DirectorDashboard({
       name: kgName,
       address: kgAddress || "Toshkent shahri",
       phone: kgPhone || "+998900000000",
-      directorName: "Tayinlanmagan",
+      directorName: "",
+      directorUsername: "",
       capacity: 100,
       status: "Faol",
       createdDate: new Date().toISOString().split("T")[0]
@@ -826,9 +827,8 @@ export default function DirectorDashboard({
 
     setKindergartens(prev => [newKgObj, ...prev]);
     try {
-      const added: any[] = JSON.parse(localStorage.getItem("added_kindergartens") || "[]");
-      added.unshift(newKgObj);
-      localStorage.setItem("added_kindergartens", JSON.stringify(added));
+      const cached: any[] = JSON.parse(localStorage.getItem("cache_kindergartens") || "[]");
+      localStorage.setItem("cache_kindergartens", JSON.stringify([newKgObj, ...cached.filter((k: any) => k.id !== newKgObj.id)]));
     } catch(e){}
 
     setShowAddKgModal(false);
@@ -845,7 +845,8 @@ export default function DirectorDashboard({
           name: kgName,
           address: kgAddress || "Toshkent shahri",
           phone: kgPhone || "+998900000000",
-          directorName: "Tayinlanmagan"
+          directorName: "",
+          directorUsername: ""
         })
       });
     } catch (err) {
@@ -853,15 +854,85 @@ export default function DirectorDashboard({
     }
   };
 
+  const handleDeleteKindergarten = async (id: string, name: string) => {
+    if (!window.confirm(`Haqiqatan ham "${name}" bog'chasini tizimdan butunlay o'chirmoqchimisiz?`)) return;
+
+    setKindergartens(prev => prev.filter(k => k.id !== id));
+    try {
+      const del: string[] = JSON.parse(localStorage.getItem("deleted_kindergartens_ids") || "[]");
+      if (!del.includes(id)) {
+        del.push(id);
+        localStorage.setItem("deleted_kindergartens_ids", JSON.stringify(del));
+      }
+      const cached: any[] = JSON.parse(localStorage.getItem("cache_kindergartens") || "[]");
+      localStorage.setItem("cache_kindergartens", JSON.stringify(cached.filter((k: any) => k.id !== id)));
+      await fetch(`/api/kindergartens/${id}`, { method: "DELETE" });
+    } catch(e){}
+
+    if (selectedKindergartenId === id) {
+      setSelectedKindergartenId("all");
+    }
+    triggerNotification(`"${name}" bog'chasi tizimdan muvaffaqiyatli o'chirildi.`);
+  };
+
   const handleAssignDirector = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dirNameInput || !dirUsernameInput || !dirPasswordInput) return;
 
-    setKindergartens(prev => prev.map(k => k.id === assigningKgId ? { ...k, directorName: dirNameInput } : k));
+    const targetKgId = assigningKgId;
+    const dirName = dirNameInput;
+    const dirUser = dirUsernameInput;
+    const dirPass = dirPasswordInput;
+    const dirPhone = dirPhoneInput;
+    const dirPassp = dirPassportInput;
+
+    setKindergartens(prev => prev.map(k => k.id === targetKgId ? {
+      ...k,
+      directorName: dirName,
+      directorUsername: dirUser,
+      directorPhone: dirPhone
+    } : k));
+
     try {
       const mod: Record<string, any> = JSON.parse(localStorage.getItem("modified_kindergartens") || "{}");
-      mod[assigningKgId] = { ...(mod[assigningKgId] || {}), directorName: dirNameInput };
+      mod[targetKgId] = {
+        ...(mod[targetKgId] || {}),
+        directorName: dirName,
+        directorUsername: dirUser,
+        directorPhone: dirPhone
+      };
       localStorage.setItem("modified_kindergartens", JSON.stringify(mod));
+
+      const cached: any[] = JSON.parse(localStorage.getItem("cache_kindergartens") || "[]");
+      localStorage.setItem("cache_kindergartens", JSON.stringify(cached.map((k: any) =>
+        k.id === targetKgId ? {
+          ...k,
+          directorName: dirName,
+          directorUsername: dirUser,
+          directorPhone: dirPhone
+        } : k
+      )));
+
+      // Add director to employees so they can login directly
+      const empId = `E-DIR-${Date.now().toString().slice(-6)}`;
+      const newDirEmp: Employee = {
+        id: empId,
+        name: dirName,
+        username: dirUser,
+        login: dirUser,
+        role: "Direktor",
+        phone: dirPhone,
+        passport: dirPassp,
+        kindergartenId: targetKgId,
+        status: "Faol",
+        joinedDate: new Date().toISOString().split("T")[0],
+        plainPassword: dirPass,
+        passwordHash: dirPass
+      };
+      const emps: any[] = JSON.parse(localStorage.getItem("cache_employees") || "[]");
+      const updatedEmps = [newDirEmp, ...emps.filter((emp: any) => emp.username !== dirUser)];
+      localStorage.setItem("cache_employees", JSON.stringify(updatedEmps));
+      setLocalEmployees(updatedEmps);
     } catch(e){}
 
     setShowAssignDirectorModal(false);
@@ -870,18 +941,18 @@ export default function DirectorDashboard({
     setDirPasswordInput("");
     setDirPhoneInput("+998");
     setDirPassportInput("");
-    triggerNotification("Direktor logini muvaffaqiyatli yaratildi!");
+    triggerNotification(`"${dirName}" muvaffaqiyatli direktor etib tayinlandi! (Login: ${dirUser})`);
 
     try {
-      await fetch(`/api/kindergartens/${assigningKgId}/director`, {
+      await fetch(`/api/kindergartens/${targetKgId}/director`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: dirNameInput,
-          username: dirUsernameInput,
-          password: dirPasswordInput,
-          phone: dirPhoneInput,
-          passport: dirPassportInput
+          name: dirName,
+          username: dirUser,
+          password: dirPass,
+          phone: dirPhone,
+          passport: dirPassp
         })
       });
     } catch (err) {
@@ -2937,7 +3008,7 @@ export default function DirectorDashboard({
                             <p className="text-[11px] text-slate-500 mt-0.5">Aloqa: {kg.phone || "Kiritilmagan"}</p>
                           </div>
                         </div>
- 
+
                         <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => {
@@ -2958,11 +3029,18 @@ export default function DirectorDashboard({
                           >
                             <Key className="w-4 h-4 text-amber-400" /> Direktor Biriktirish
                           </button>
+                          <button
+                            onClick={() => handleDeleteKindergarten(kg.id, kg.name)}
+                            className="bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 border border-rose-500/20 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                            title="Bog'chani o'chirish"
+                          >
+                            <Trash2 className="w-4 h-4" /> O'chirish
+                          </button>
                         </div>
                       </div>
- 
+
                       <hr className="border-slate-800" />
- 
+
                       {/* Detail metrics & Director credentials */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="bg-slate-950/50 border border-slate-850/50 p-3 rounded-2xl">
@@ -2979,10 +3057,12 @@ export default function DirectorDashboard({
                         </div>
                         <div className="bg-slate-950/50 border border-slate-850/50 p-3 rounded-2xl">
                           <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Tizim direktori</span>
-                          {kg.directorUsername ? (
+                          {kg.directorName || kg.directorUsername ? (
                             <div className="mt-0.5">
-                              <span className="text-xs font-black text-emerald-400 block truncate">{kg.directorName}</span>
-                              <span className="text-[9px] font-mono text-slate-400 block truncate">Login: {kg.directorUsername}</span>
+                              <span className="text-xs font-black text-emerald-400 block truncate">{kg.directorName || "Tayinlangan"}</span>
+                              {kg.directorUsername && (
+                                <span className="text-[9px] font-mono text-slate-400 block truncate">Login: {kg.directorUsername}</span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-xs font-bold text-amber-500 block mt-0.5">⚠️ Tayinlanmagan</span>
@@ -5039,11 +5119,19 @@ export default function DirectorDashboard({
                     <tbody className="divide-y divide-slate-800 text-slate-300">
                       {employeesList.map(e => (
                         <tr key={e.id} className="hover:bg-slate-850/30">
-                          <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
-                            <span className="w-7 h-7 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-500/20">
-                              {e.name.charAt(0)}
-                            </span>
-                            {e.name}
+                          <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
+                            {e.photo || e.avatar ? (
+                              <img
+                                src={e.photo || e.avatar}
+                                alt={e.name}
+                                className="w-8 h-8 rounded-full object-cover border border-emerald-500/30 flex-shrink-0"
+                              />
+                            ) : (
+                              <span className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs font-bold border border-emerald-500/20 flex-shrink-0">
+                                {e.name.charAt(0)}
+                              </span>
+                            )}
+                            <span>{e.name}</span>
                           </td>
                           <td className="py-3 px-4"><span className="bg-slate-800 px-2 py-0.5 rounded font-bold text-[10px] text-indigo-300">{e.role}</span></td>
                           <td className="py-3 px-4 font-mono text-slate-400">{e.username}</td>

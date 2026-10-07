@@ -1,4 +1,4 @@
-﻿import {StrictMode} from 'react';
+import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
@@ -65,22 +65,96 @@ function handleLocalApi(method: string, relativePath: string, init?: RequestInit
   if (cleanPath.includes('failed-checkins')) return createJsonResponse([]);
   if (cleanPath.includes('gemini') || cleanPath.includes('meals/analyze')) return createJsonResponse({ success: true, analysis: { calories: 450, protein: 18, fat: 12, carb: 60, vitamins: "A, C, D", minerals: "Kaltsiy, Temir", aiComment: "Sog'lom taom." } });
 
+  if (cleanPath.includes('face-id/scan') || cleanPath.includes('face-recognition') || cleanPath.includes('face-id')) {
+    const childId = body.childId || body.targetId;
+    const temp = body.temperature || "36.6";
+    const nowTime = new Date().toLocaleTimeString("uz-UZ", { hour: '2-digit', minute: '2-digit' });
+    const today = new Date().toISOString().split('T')[0];
+    const direction = (body.deviceIp && body.deviceIp.includes('226')) || body.direction === 'out' ? 'out' : 'in';
+    const children = getLocalList('children');
+    const matchedChild = children.find((c: any) => c.id === childId) || children[0] || { id: childId || "C-1", name: "O'quvchi", photo: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200" };
+    const finalChildId = matchedChild ? matchedChild.id : (childId || "C-1");
+    const rec = {
+      id: `ATT-${Date.now()}`,
+      childId: finalChildId,
+      date: today,
+      checkIn: direction === 'in' ? nowTime : null,
+      checkOut: direction === 'out' ? nowTime : null,
+      status: "Keldi",
+      temperature: String(temp)
+    };
+    addLocalItem('attendance', rec);
+    return createJsonResponse({ success: true, record: rec, child: matchedChild });
+  }
+
   if (cleanPath.includes('chef/dashboard')) {
     const menus = getLocalList('menus');
     const today = new Date().toISOString().split('T')[0];
     const todayMenus = menus.filter((m: any) => m.date === today);
-    return createJsonResponse({ success: true, stats: { todayBreakfast: todayMenus.find((m: any) => m.mealType === 'Breakfast')?.mealName || "Kiritilmagan", todayLunch: todayMenus.find((m: any) => m.mealType === 'Lunch')?.mealName || "Kiritilmagan", todayAfternoonSnack: todayMenus.find((m: any) => m.mealType === 'Snack')?.mealName || "Kiritilmagan", todayDinner: todayMenus.find((m: any) => m.mealType === 'Dinner')?.mealName || "Kiritilmagan", totalMealsPrepared: menus.length, childrenEatingToday: getLocalList('children').length, specialDietChildren: 0, allergyAlerts: 0, lowStockIngredients: getLocalList('ingredients').filter((i: any) => Number(i.quantity) < 5).length, purchaseRequests: getLocalList('purchase-requests').length, kitchenTasks: 3, aiNutritionScore: 92 }, charts: { weeklyMenu: [], caloriesDistribution: [], proteinIntake: [], wasteStatistics: [] } });
+    const children = getLocalList('children');
+    const ingredients = getLocalList('ingredients');
+    const requests = getLocalList('purchase-requests');
+    const specialDietCount = children.filter((c: any) => c.medicalCard && c.medicalCard.allergies && (c.medicalCard.allergies.toLowerCase().includes('diabet') || c.medicalCard.allergies.toLowerCase().includes('gluten'))).length;
+    const allergyCount = children.filter((c: any) => c.medicalCard && c.medicalCard.allergies && c.medicalCard.allergies !== "Yo'q" && c.medicalCard.allergies !== "yo'q").length;
+    return createJsonResponse({
+      success: true,
+      stats: {
+        todayBreakfast: todayMenus.find((m: any) => m.mealType === 'Breakfast')?.mealName || "Kiritilmagan",
+        todayLunch: todayMenus.find((m: any) => m.mealType === 'Lunch')?.mealName || "Kiritilmagan",
+        todayAfternoonSnack: todayMenus.find((m: any) => m.mealType === 'Snack')?.mealName || "Kiritilmagan",
+        todayDinner: todayMenus.find((m: any) => m.mealType === 'Dinner')?.mealName || "Kiritilmagan",
+        totalMealsPrepared: todayMenus.length > 0 ? children.length * todayMenus.length : 0,
+        childrenEatingToday: children.length,
+        specialDietChildren: specialDietCount,
+        allergyAlerts: allergyCount,
+        lowStockIngredients: ingredients.filter((i: any) => Number(i.quantity) < 5).length,
+        purchaseRequests: requests.length,
+        kitchenTasks: 0,
+        aiNutritionScore: todayMenus.length > 0 ? 95 : 0
+      },
+      charts: { weeklyMenu: [], caloriesDistribution: [], proteinIntake: [], wasteStatistics: [] }
+    });
+  }
+
+  if (cleanPath.includes('dashboard/statistics') || cleanPath.includes('dashboard/metrics')) {
+    const payments = getLocalList('payments');
+    const children = getLocalList('children');
+    const expenses = getLocalList('expenses');
+    const employees = getLocalList('employees');
+    const pr = getLocalList('purchase-requests');
+    const today = new Date().toISOString().split('T')[0];
+    const todayPayments = payments.filter((p: any) => p.date === today || (p.createdAt && p.createdAt.startsWith(today)));
+    const bugungiTushum = todayPayments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const oylikDaromad = payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
+    const todayExpenses = expenses.filter((e: any) => e.date === today || (e.createdAt && e.createdAt.startsWith(today)));
+    const bugungiXarajat = todayExpenses.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
+    const paidChildIds = new Set(payments.map((p: any) => p.childId));
+    const tolovQilganBolalar = children.filter((c: any) => paidChildIds.has(c.id)).length;
+    const tolamaganBolalar = Math.max(0, children.length - tolovQilganBolalar);
+    const xodimlarIshHaqi = employees.reduce((sum: number, e: any) => sum + (Number(e.salary) || 0), 0);
+    return createJsonResponse({
+      success: true,
+      bugungiTushum,
+      oylikDaromad,
+      bugungiXarajat,
+      qarzdorOtaOnalarSoni: tolamaganBolalar,
+      tolovQilganBolalar,
+      tolamaganBolalar,
+      xodimlarIshHaqi,
+      xaridlar: pr.length,
+      bugungiCheklar: todayPayments.length
+    });
   }
 
   if (resource === 'login' && method === 'POST') {
     const { username, password } = body;
     if (!username || !password) return createJsonResponse({ success: false, message: "Username va parol shart!" }, 400);
     const employees = getLocalList('employees');
-    const localUser = employees.find((e: any) => (e.username && e.username === username) || (e.login && e.login === username));
+    const localUser = employees.find((e: any) => (e.username && e.username.toLowerCase() === username.toLowerCase()) || (e.login && e.login.toLowerCase() === username.toLowerCase()));
     if (localUser) {
       const ok = localVerifyPassword(password, localUser.passwordHash || '') || localUser.plainPassword === password || localUser.password === password;
       if (ok) {
-        const tp = { id: localUser.id, username: localUser.username || username, role: localUser.role, name: localUser.name, phone: localUser.phone || '', kindergartenId: localUser.kindergartenId || 'K-1', avatar: localUser.avatar || null };
+        const tp = { id: localUser.id, username: localUser.username || username, role: localUser.role, name: localUser.name, phone: localUser.phone || '', kindergartenId: localUser.kindergartenId || 'K-1', avatar: localUser.avatar || localUser.photo || null };
         return createJsonResponse({ success: true, token: 'local_' + btoa(JSON.stringify(tp)), user: tp });
       }
     }
@@ -136,20 +210,57 @@ function handleLocalApi(method: string, relativePath: string, init?: RequestInit
       const kgId = id;
       const { name, username, password, phone, passport } = body;
       const empId = `E-DIR-${Date.now().toString().slice(-6)}`;
-      const newDir = { id: empId, name: name || 'Yangi Direktor', username: username || `dir_${kgId}`, login: username || `dir_${kgId}`, passwordHash: localHashPassword(password || 'dir123'), plainPassword: password || 'dir123', role: 'Direktor', phone: phone || '', passport: passport || '', kindergartenId: kgId, status: 'Faol', joinedDate: new Date().toISOString().split('T')[0], avatar: null };
+      const newDir = { id: empId, name: name || 'Yangi Direktor', username: username || `dir_${kgId}`, login: username || `dir_${kgId}`, passwordHash: localHashPassword(password || 'dir123'), plainPassword: password || 'dir123', password: password || 'dir123', role: 'Direktor', phone: phone || '', passport: passport || '', kindergartenId: kgId, status: 'Faol', joinedDate: new Date().toISOString().split('T')[0], avatar: null };
       addLocalItem('employees', newDir);
-      try { const mod: Record<string, any> = JSON.parse(localStorage.getItem('modified_kindergartens') || '{}'); mod[kgId] = { ...(mod[kgId] || {}), directorName: name || 'Yangi Direktor' }; localStorage.setItem('modified_kindergartens', JSON.stringify(mod)); const cached: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]'); localStorage.setItem('cache_kindergartens', JSON.stringify(cached.map((k: any) => k.id === kgId ? { ...k, directorName: name || 'Yangi Direktor' } : k))); } catch {}
+      try {
+        const mod: Record<string, any> = JSON.parse(localStorage.getItem('modified_kindergartens') || '{}');
+        mod[kgId] = { ...(mod[kgId] || {}), directorName: name || 'Yangi Direktor', directorUsername: username || `dir_${kgId}`, directorPhone: phone || '' };
+        localStorage.setItem('modified_kindergartens', JSON.stringify(mod));
+        const cached: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]');
+        localStorage.setItem('cache_kindergartens', JSON.stringify(cached.map((k: any) => k.id === kgId ? { ...k, directorName: name || 'Yangi Direktor', directorUsername: username || `dir_${kgId}`, directorPhone: phone || '' } : k)));
+      } catch {}
       return createJsonResponse({ success: true, message: "Direktor logini yaratildi!" });
     }
     if (cleanPath.includes('/toggle-portal')) return createJsonResponse({ success: true });
     if (method === 'GET') {
       let list = getLocalList('kindergartens');
-      if (list.length === 0) { list = [{ id: "K-1", name: "1-son Davlat Bog'chasi (Markaziy)", address: "Toshkent sh., Chilonzor 1-mavze", phone: "+998712001122", directorName: "Dilnoza Rahimova", capacity: 120, status: "Faol" }, { id: "K-2", name: "2-son Nihol Filiali", address: "Toshkent sh., Yunusobod 4-mavze", phone: "+998712002233", directorName: "Aziza Karimova", capacity: 90, status: "Faol" }, { id: "K-3", name: "3-son Kamalak Filiali", address: "Toshkent sh., Mirzo Ulug'bek", phone: "+998712003344", directorName: "Gulnora Aliyeva", capacity: 150, status: "Faol" }]; localStorage.setItem('cache_kindergartens', JSON.stringify(list)); }
+      if (list.length === 0) {
+        list = [
+          { id: "K-1", name: "1-son Davlat Bog'chasi (Markaziy)", address: "Toshkent sh., Chilonzor 1-mavze", phone: "+998712001122", directorName: "Dilnoza Rahimova", directorUsername: "direktor1", capacity: 120, status: "Faol" },
+          { id: "K-2", name: "2-son Nihol Filiali", address: "Toshkent sh., Yunusobod 4-mavze", phone: "+998712002233", directorName: "Aziza Karimova", directorUsername: "direktor2", capacity: 90, status: "Faol" },
+          { id: "K-3", name: "3-son Kamalak Filiali", address: "Toshkent sh., Mirzo Ulug'bek", phone: "+998712003344", directorName: "Gulnora Aliyeva", directorUsername: "direktor3", capacity: 150, status: "Faol" }
+        ];
+        localStorage.setItem('cache_kindergartens', JSON.stringify(list));
+      }
       return createJsonResponse(list);
     }
-    if (method === 'POST') { const nk = { id: body.id || `K-${Date.now().toString().slice(-4)}`, name: body.name || "Yangi Bog'cha", address: body.address || "Toshkent shahri", phone: body.phone || "+998900000000", directorName: body.directorName || "Tayinlanmagan", capacity: Number(body.capacity || 100), status: "Faol", createdDate: new Date().toISOString().split('T')[0] }; addLocalItem('kindergartens', nk); return createJsonResponse({ success: true, kindergarten: nk }); }
-    if (method === 'PUT') { try { const mod: Record<string, any> = JSON.parse(localStorage.getItem('modified_kindergartens') || '{}'); mod[id] = { ...(mod[id] || {}), ...body }; localStorage.setItem('modified_kindergartens', JSON.stringify(mod)); const c: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]'); localStorage.setItem('cache_kindergartens', JSON.stringify(c.map((k: any) => k.id === id ? { ...k, ...body } : k))); } catch {} return createJsonResponse({ success: true }); }
-    if (method === 'DELETE') { try { const del: string[] = JSON.parse(localStorage.getItem('deleted_kindergartens_ids') || '[]'); if (!del.includes(id)) { del.push(id); localStorage.setItem('deleted_kindergartens_ids', JSON.stringify(del)); } const c: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]'); localStorage.setItem('cache_kindergartens', JSON.stringify(c.filter((k: any) => k.id !== id))); } catch {} return createJsonResponse({ success: true }); }
+    if (method === 'POST') {
+      const nk = { id: body.id || `K-${Date.now().toString().slice(-4)}`, name: body.name || "Yangi Bog'cha", address: body.address || "Toshkent shahri", phone: body.phone || "+998900000000", directorName: body.directorName || "", directorUsername: body.directorUsername || "", capacity: Number(body.capacity || 100), status: "Faol", createdDate: new Date().toISOString().split('T')[0] };
+      addLocalItem('kindergartens', nk);
+      return createJsonResponse({ success: true, kindergarten: nk });
+    }
+    if (method === 'PUT') {
+      try {
+        const mod: Record<string, any> = JSON.parse(localStorage.getItem('modified_kindergartens') || '{}');
+        mod[id] = { ...(mod[id] || {}), ...body };
+        localStorage.setItem('modified_kindergartens', JSON.stringify(mod));
+        const c: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]');
+        localStorage.setItem('cache_kindergartens', JSON.stringify(c.map((k: any) => k.id === id ? { ...k, ...body } : k)));
+      } catch {}
+      return createJsonResponse({ success: true });
+    }
+    if (method === 'DELETE') {
+      try {
+        const del: string[] = JSON.parse(localStorage.getItem('deleted_kindergartens_ids') || '[]');
+        if (!del.includes(id)) {
+          del.push(id);
+          localStorage.setItem('deleted_kindergartens_ids', JSON.stringify(del));
+        }
+        const c: any[] = JSON.parse(localStorage.getItem('cache_kindergartens') || '[]');
+        localStorage.setItem('cache_kindergartens', JSON.stringify(c.filter((k: any) => k.id !== id)));
+      } catch {}
+      return createJsonResponse({ success: true });
+    }
   }
 
   const crudResources = ['employees','groups','children','payments','meals','ingredients','menus','complaints','audit-logs','documents','activities','payroll','purchase-requests','meal-gallery','recipes'];

@@ -167,18 +167,18 @@ export const ChefController = {
       res.json({
         success: true,
         stats: {
-          todayBreakfast: todayMenu?.breakfast?.title || "Sutli bo'tqa",
-          todayLunch: todayMenu?.lunch?.title || "Karam sho'rva",
-          todayAfternoonSnack: (todayMenu as any)?.afternoonSnack?.title || "Kek va sharbat",
-          todayDinner: todayMenu?.dinner?.title || "Zapekanka",
-          totalMealsPrepared: totalMealsCount * 3 || 75,
-          childrenEatingToday: totalMealsCount || 25,
-          specialDietChildren: specialDietChildrenCount || 4,
+          todayBreakfast: todayMenu?.breakfast?.title || "Kiritilmagan",
+          todayLunch: todayMenu?.lunch?.title || "Kiritilmagan",
+          todayAfternoonSnack: (todayMenu as any)?.afternoonSnack?.title || "Kiritilmagan",
+          todayDinner: todayMenu?.dinner?.title || "Kiritilmagan",
+          totalMealsPrepared: todayMenu ? totalMealsCount * 3 : 0,
+          childrenEatingToday: totalMealsCount,
+          specialDietChildren: specialDietChildrenCount,
           allergyAlerts: allergyChildrenList.length,
           lowStockIngredients: lowStockCount,
           purchaseRequests: activeRequests,
-          kitchenTasks: 6,
-          aiNutritionScore: todayMenu ? 94 : 85
+          kitchenTasks: 0,
+          aiNutritionScore: todayMenu ? 95 : 0
         },
         charts: {
           weeklyMenu: [

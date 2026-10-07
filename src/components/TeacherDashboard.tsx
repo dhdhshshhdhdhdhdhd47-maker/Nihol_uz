@@ -515,14 +515,15 @@ export default function TeacherDashboard({ user, childrenList, onRefresh }: Teac
     setScanTemp(calculatedTemp);
 
     if (!finalChildId || finalChildId === "auto") {
-      // Automatically detect child: pick one who hasn't been scanned today for current direction
-      const unscanned = studentsToRender.find(c => {
+      // Automatically detect child from group or available children list
+      const pool = (studentsToRender && studentsToRender.length > 0) ? studentsToRender : childrenList;
+      const unscanned = pool.find(c => {
         const hasAtt = attendanceList.some(a => a.childId === c.id && a.date === todayStr && (scanDirection === "in" ? a.checkIn : a.checkOut));
         return !hasAtt;
-      }) || studentsToRender[0];
+      }) || pool[0];
 
       if (!unscanned) {
-        triggerToast("Guruhdagi barcha bolalar davomati allaqachon olingan!");
+        triggerToast("Guruhdagi bolalar ro'yxati topilmadi!");
         return;
       }
       finalChildId = unscanned.id;

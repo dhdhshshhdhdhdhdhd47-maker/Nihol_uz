@@ -1455,16 +1455,16 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
                     <tr key={index} className="hover:bg-slate-950/40">
                       <td className="py-3 px-2 font-mono font-bold text-emerald-400">{item.date}</td>
                       <td className="py-3 px-2">
-                        <div className="max-w-[120px] truncate" title={item.breakfast?.title}>{item.breakfast?.title || "Sutli bo'tqa"}</div>
-                        <span className="text-[9px] text-slate-500 block">{item.breakfast?.calories} kcal</span>
+                        <div className="max-w-[120px] truncate" title={item.breakfast?.title || item.mealName}>{item.breakfast?.title || (item.mealType === 'Breakfast' ? item.mealName : "—")}</div>
+                        <span className="text-[9px] text-slate-500 block">{item.breakfast?.calories || item.calories || 0} kcal</span>
                       </td>
                       <td className="py-3 px-2">
-                        <div className="max-w-[120px] truncate font-bold text-white" title={item.lunch?.title}>{item.lunch?.title || "Sho'rva"}</div>
-                        <span className="text-[9px] text-slate-500 block">{item.lunch?.calories} kcal</span>
+                        <div className="max-w-[120px] truncate font-bold text-white" title={item.lunch?.title || item.mealName}>{item.lunch?.title || (item.mealType === 'Lunch' ? item.mealName : "—")}</div>
+                        <span className="text-[9px] text-slate-500 block">{item.lunch?.calories || item.calories || 0} kcal</span>
                       </td>
                       <td className="py-3 px-2">
-                        <div className="max-w-[120px] truncate" title={item.dinner?.title}>{item.dinner?.title || "Zapekanka"}</div>
-                        <span className="text-[9px] text-slate-500 block">{item.dinner?.calories} kcal</span>
+                        <div className="max-w-[120px] truncate" title={item.dinner?.title || item.mealName}>{item.dinner?.title || (item.mealType === 'Dinner' ? item.mealName : "—")}</div>
+                        <span className="text-[9px] text-slate-500 block">{item.dinner?.calories || item.calories || 0} kcal</span>
                       </td>
                       <td className="py-3 px-2 text-right space-x-1.5">
                         <button
