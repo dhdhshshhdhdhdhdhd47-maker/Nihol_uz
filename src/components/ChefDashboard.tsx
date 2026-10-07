@@ -463,12 +463,12 @@ export default function ChefDashboard({ user, mealsList, onRefresh }: ChefDashbo
   };
 
   // Delete Menu
-  const handleDeleteMenu = async (dateStr: string) => {
-    if (!window.confirm("Ushbu kunlik menyuni o'chirmoqchimisiz?")) return;
-    setDailyMenus(prev => prev.filter(m => m.date !== dateStr));
+  const handleDeleteMenu = async (id: string) => {
+    if (!window.confirm("Ushbu menyuni o'chirmoqchimisiz?")) return;
+    setMenus(prev => prev.filter(m => m.id !== id && m.date !== id));
     showToast("Menyu tizimdan o'chirildi.");
     try {
-      await fetch(`/api/menus/${dateStr}`, { method: "DELETE" });
+      await fetch(`/api/menus/${id}`, { method: "DELETE" });
     } catch (err) {
       console.error(err);
     }

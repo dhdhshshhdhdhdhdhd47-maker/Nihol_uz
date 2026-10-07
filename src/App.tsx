@@ -99,6 +99,23 @@ export default function App() {
         setCheckingSession(false);
         return;
       }
+
+      // Local token (created by local auth engine) — decode directly, no network call
+      if (token.startsWith('local_')) {
+        try {
+          const payload = JSON.parse(atob(token.replace('local_', '')));
+          if (payload && payload.id) {
+            // Merge with any profile updates saved in currentUser
+            const storedUser = localStorage.getItem("currentUser");
+            const merged = storedUser ? { ...payload, ...JSON.parse(storedUser) } : payload;
+            setCurrentUser(merged);
+            localStorage.setItem("currentUser", JSON.stringify(merged));
+          }
+        } catch {}
+        setCheckingSession(false);
+        return;
+      }
+
       try {
         const res = await fetch("/api/auth/me", {
           headers: {
@@ -142,27 +159,16 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Global window.fetch Interceptor & Silent 2-second Keep-Alive Cron
+  // Global Auth Header Injector — wraps the main.tsx API engine fetch, adds auth headers
   useEffect(() => {
-    const originalFetch = window.fetch;
+    const alreadyPatchedFetch = window.fetch; // This is the main.tsx engine
     let isPatched = false;
 
-    const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      let url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-      
-      // Rewrite relative API URLs to point to Render production backend when not in local/preview env
-      if (url.startsWith('/api/')) {
-        const apiBase = window.location.hostname === "localhost" || window.location.hostname.includes("ais-")
-          ? ""
-          : "https://bogcham-uz.onrender.com";
-        url = `${apiBase}${url}`;
-        input = url;
-      }
-
+    const authHeaderFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
       const newInit = { ...(init || {}) };
       const headers = new Headers(newInit.headers || {});
-      
-      // Lazily fetch and attach kindergarten ID from stored user
+
+      // Attach kindergarten ID from stored user
       const storedUser = localStorage.getItem("currentUser");
       if (storedUser) {
         try {
@@ -170,58 +176,38 @@ export default function App() {
           if (parsed?.kindergartenId && !headers.has('x-kindergarten-id')) {
             headers.set('x-kindergarten-id', parsed.kindergartenId);
           }
-        } catch (e) {}
+        } catch {}
       }
-      
-      // Automatically attach Authorization JWT token if available
+
+      // Attach Authorization JWT token
       const token = localStorage.getItem("authToken");
       if (token && !headers.has('Authorization') && !headers.has('authorization')) {
         headers.set('Authorization', `Bearer ${token}`);
       }
-      
+
       newInit.headers = headers;
-      return originalFetch(input, newInit);
+      // Call the main.tsx patched fetch (which handles local API + Render fallback)
+      return alreadyPatchedFetch(input, newInit);
     };
 
     try {
-      window.fetch = customFetch;
+      window.fetch = authHeaderFetch;
       isPatched = true;
     } catch (err) {
-      Object.defineProperty(window, 'fetch', {
-        value: customFetch,
-        writable: true,
-        configurable: true
-      });
+      Object.defineProperty(window, 'fetch', { value: authHeaderFetch, writable: true, configurable: true });
       isPatched = true;
     }
 
-    // Silent background keep-alive ping every 2 seconds
-    // Resolves to the correct base URL and pings /api/health to prevent Render spin-down.
-    // Does not update React states or cause any page refreshes or re-renders.
+    // Silent keep-alive ping every 8 seconds to prevent Render spin-down
     const keepAliveInterval = setInterval(() => {
-      const apiBase = window.location.hostname === "localhost" || window.location.hostname.includes("ais-")
-        ? ""
-        : "https://bogcham-uz.onrender.com";
-      
-      originalFetch(`${apiBase}/api/health`, { method: "GET" })
-        .catch(() => {
-          // Completely silent catch to avoid console noise during transient disconnects
-        });
-    }, 2000);
+      alreadyPatchedFetch("https://bogcham-uz.onrender.com/api/health", { method: "GET" })
+        .catch(() => {});
+    }, 8000);
 
     return () => {
+      // Restore the main.tsx engine (not the real originalFetch)
       if (isPatched) {
-        try {
-          window.fetch = originalFetch;
-        } catch (e) {
-          try {
-            Object.defineProperty(window, 'fetch', {
-              value: originalFetch,
-              writable: true,
-              configurable: true
-            });
-          } catch (err) {}
-        }
+        try { window.fetch = alreadyPatchedFetch; } catch {}
       }
       clearInterval(keepAliveInterval);
     };

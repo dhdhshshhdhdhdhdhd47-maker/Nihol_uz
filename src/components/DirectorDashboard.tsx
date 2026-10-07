@@ -1369,7 +1369,7 @@ export default function DirectorDashboard({
     if (!childName || !childParentName || !childParentPhone) return;
 
     const newChildObj: Child = {
-      id: `C-${Date.now().toString().slice(-4)}`,
+      id: `C-${Date.now().toString().slice(-6)}`,
       name: childName,
       birthDate: childBirthDate || "2021-01-01",
       age: 2026 - Number((childBirthDate || "2021").split("-")[0]) || 5,
@@ -1380,23 +1380,30 @@ export default function DirectorDashboard({
       telegramChatId: childTelegramChatId || undefined,
       photo: childPhoto || "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?auto=format&fit=crop&q=80&w=200",
       status: "Bog'chada",
+      medicalCard: {
+        allergies: "Yo'q",
+        bloodGroup: "O (I)",
+        rhFactor: "Positive (+)",
+        height: 100,
+        weight: 18,
+        vaccinations: ["BCG", "Hepatitis B"],
+        lastCheckup: new Date().toISOString().split("T")[0]
+      },
       documents: {
         birthCertificate: true,
         medicalCard: true,
         passportCopy: false,
         contract: true,
-        photoUploaded: true
+        photoUploaded: !!childPhoto
       },
       kindergartenId: user.kindergartenId || "K-1"
     };
 
     const updated = [newChildObj, ...localChildren];
     setLocalChildren(updated);
+    // Single source write — only cache_children, no added_children to prevent duplicates
     try {
       localStorage.setItem("cache_children", JSON.stringify(updated));
-      const added: any[] = JSON.parse(localStorage.getItem("added_children") || "[]");
-      added.unshift(newChildObj);
-      localStorage.setItem("added_children", JSON.stringify(added));
     } catch(e){}
     if (onUpdateChildren) onUpdateChildren(updated);
 
@@ -1512,9 +1519,10 @@ export default function DirectorDashboard({
     setAddEmpError(null);
 
     const newEmpObj: Employee = {
-      id: `E-${Date.now().toString().slice(-4)}`,
+      id: `E-${Date.now().toString().slice(-6)}`,
       name: empName,
       username: empUser,
+      login: empUser,
       role: empRole,
       phone: empPhone,
       passport: empPassport,
@@ -1522,16 +1530,17 @@ export default function DirectorDashboard({
       birthDate: "1992-05-15",
       status: "Faol",
       joinedDate: new Date().toISOString().split("T")[0],
-      kindergartenId: user.kindergartenId || "K-1"
+      kindergartenId: user.kindergartenId || "K-1",
+      // Store password for local login
+      plainPassword: empPass,
+      passwordHash: empPass,
     };
 
     const updated = [newEmpObj, ...localEmployees];
     setLocalEmployees(updated);
+    // Single source write — only cache_employees, no added_employees to prevent duplicates
     try {
       localStorage.setItem("cache_employees", JSON.stringify(updated));
-      const added: any[] = JSON.parse(localStorage.getItem("added_employees") || "[]");
-      added.unshift(newEmpObj);
-      localStorage.setItem("added_employees", JSON.stringify(added));
     } catch(e){}
     if (onUpdateEmployees) onUpdateEmployees(updated);
 
@@ -1551,12 +1560,8 @@ export default function DirectorDashboard({
       user.kindergartenId
     ).catch(() => {});
 
-    const reqHeaders: Record<string, string> = { 
-      "Content-Type": "application/json" 
-    };
-    if (user.kindergartenId) {
-      reqHeaders["x-kindergarten-id"] = user.kindergartenId;
-    }
+    const reqHeaders: Record<string, string> = { "Content-Type": "application/json" };
+    if (user.kindergartenId) reqHeaders["x-kindergarten-id"] = user.kindergartenId;
 
     try {
       await fetch("/api/employees", {
@@ -1564,6 +1569,7 @@ export default function DirectorDashboard({
         headers: reqHeaders,
         body: JSON.stringify({
           ...newEmpObj,
+          password: empPass,
           passwordHash: empPass,
           operatorName: user.name
         }),
