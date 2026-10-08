@@ -1105,347 +1105,96 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
         {/* Left Side Workspace */}
         <div className="flex flex-col gap-4 shrink-0">
           
-          {/* TAB 1: BIOMETRIC SIMULATION */}
+          {/* TAB 1: BIOMETRIC ATTENDANCE LOGS & HOURS REPORT */}
           {activeTab === "biometric" && (
-            <form onSubmit={handleScan} className="space-y-4 animate-fade-in flex flex-col h-full justify-between">
+            <div className="space-y-4 animate-fade-in flex flex-col h-full">
               
-              {/* Select Scan method */}
-              <div className="space-y-1.5">
-                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Avtorizatsiya usuli:</label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[
-                    { id: "face", label: "FaceID", icon: <Camera className="w-4 h-4" /> },
-                    { id: "rfid", label: "Karta", icon: <CreditCard className="w-4 h-4" /> },
-                    { id: "qr", label: "QR Skaner", icon: <QrCode className="w-4 h-4" /> },
-                    { id: "fingerprint", label: "Barmoq", icon: <Fingerprint className="w-4 h-4" /> }
-                  ].map((m) => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setScanMethod(m.id as any)}
-                      className={`py-2 rounded-xl border text-[9px] font-bold flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
-                        scanMethod === m.id
-                          ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                          : "bg-slate-950/60 border-slate-850 text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      {m.icon}
-                      {m.label}
-                    </button>
-                  ))}
+              {/* STATS OVERVIEW CARDS */}
+              <div className="grid grid-cols-3 gap-2 shrink-0">
+                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Bugungi Davomat</span>
+                  <span className="text-lg font-black text-emerald-400 font-mono block mt-0.5">94.8%</span>
+                  <span className="text-[8px] text-slate-500 font-mono">24/25 Bola kelgan</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Xodimlar Ish Soati (1 Oy)</span>
+                  <span className="text-lg font-black text-sky-400 font-mono block mt-0.5">176 Soat</span>
+                  <span className="text-[8px] text-slate-500 font-mono">O'rtacha 8.0 soat/kun</span>
+                </div>
+                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Bolalar Bog'cha Soati (1 Oy)</span>
+                  <span className="text-lg font-black text-amber-400 font-mono block mt-0.5">160 Soat</span>
+                  <span className="text-[8px] text-slate-500 font-mono">O'rtacha 7.5 soat/kun</span>
                 </div>
               </div>
 
-              {/* IP address & gate */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <span className="text-[9px] text-emerald-400 font-bold block">📥 KIRISH DARVOZALARI</span>
-                  <select
-                    value={deviceIp}
-                    onChange={(e) => setDeviceIp(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-850 focus:border-emerald-500 rounded-xl py-2 px-3 text-white text-[11px] outline-none font-mono"
-                  >
-                    {entranceDevices.map((d) => (
-                      <option key={d.ip} value={d.ip}>{d.ip} (.{d.ip.split(".").pop()})</option>
-                    ))}
-                  </select>
+              {/* LIVE ATTENDANCE JOURNAL TABLE */}
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
+                <div className="flex justify-between items-center shrink-0">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
+                    📋 Real-Vaqt Biometrik Keldi-Ketdi Jurnali:
+                  </span>
+                  <span className="text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded font-mono font-bold">
+                    ONLINE SYNC
+                  </span>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-[9px] text-sky-400 font-bold block">📤 CHIQISH DARVOZALARI</span>
-                  <select
-                    value={deviceIp}
-                    onChange={(e) => setDeviceIp(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-850 focus:border-emerald-500 rounded-xl py-2 px-3 text-white text-[11px] outline-none font-mono"
-                  >
-                    {exitDevices.map((d) => (
-                      <option key={d.ip} value={d.ip}>{d.ip} (.{d.ip.split(".").pop()})</option>
-                    ))}
-                  </select>
+                <div className="bg-slate-950 border border-slate-850 rounded-2xl overflow-hidden flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
+                  <table className="w-full text-left border-collapse text-[10px]">
+                    <thead>
+                      <tr className="border-b border-slate-800 text-slate-400 font-bold bg-slate-900/60">
+                        <th className="py-2 px-3">Shaxs F.I.O</th>
+                        <th className="py-2 px-2 text-center">Yo'nalish</th>
+                        <th className="py-2 px-2 text-center">Usul</th>
+                        <th className="py-2 px-2 text-center">Harorat</th>
+                        <th className="py-2 px-3 text-right">Vaqt</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-850/60 font-mono">
+                      {historicalLogs.map((log) => (
+                        <tr key={log.id} className="text-slate-300 hover:bg-slate-900/50 transition-colors">
+                          <td className="py-2 px-3 font-bold flex items-center gap-2">
+                            {log.snapshot && (
+                              <img
+                                src={log.snapshot}
+                                alt=""
+                                className="w-6 h-6 rounded-lg object-cover border border-slate-800 shrink-0"
+                                referrerPolicy="no-referrer"
+                              />
+                            )}
+                            <span className="truncate">{log.childName}</span>
+                          </td>
+                          <td className="py-2 px-2 text-center">
+                            <span className={`px-2 py-0.5 rounded text-[8.5px] font-bold ${
+                              log.direction === "KIRISH"
+                                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                : "bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                            }`}>
+                              {log.direction}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2 text-center text-slate-400">{log.method}</td>
+                          <td className="py-2 px-2 text-center text-emerald-400 font-bold">36.5°C</td>
+                          <td className="py-2 px-3 text-right text-slate-400">{log.timestamp}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              {/* Person list dropdown & Manual entry */}
-              <div className="space-y-2">
-                <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Identifikatsiya qilinuvchi shaxs:</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedChildId}
-                    onChange={(e) => setSelectedChildId(e.target.value)}
-                    className="flex-1 bg-slate-950 border border-slate-850 focus:border-emerald-500 rounded-xl py-2 px-3 text-white text-xs outline-none"
-                  >
-                    <option value="">-- Ro'yxatdan tanlang --</option>
-                    <optgroup label="Bolalar">
-                      {childrenList.map((c) => (
-                        <option key={c.id} value={c.id}>{c.id} - {c.name} ({c.status})</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Xodimlar">
-                      {employeesList.map((e) => (
-                        <option key={e.id} value={e.id}>{e.id} - {e.name} ({e.role})</option>
-                      ))}
-                    </optgroup>
-                    <option value="B-999">Noma'lum ID (Xato testi uchun)</option>
-                  </select>
-                  
-                  <input
-                    type="text"
-                    value={selectedChildId}
-                    onChange={(e) => setSelectedChildId(e.target.value)}
-                    placeholder="Yoki ID yozing"
-                    className="w-[120px] bg-slate-950 border border-slate-850 focus:border-emerald-500 rounded-xl py-2 px-3 text-white text-xs font-mono"
-                  />
+              {/* REPORTING SUMMARY FOOTER */}
+              <div className="p-3 bg-slate-950 border border-slate-850 rounded-2xl space-y-1.5 shrink-0 text-[10px] text-slate-300">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-bold uppercase text-[9px]">📊 Avtomatik Sarhisob (Hisoboti):</span>
+                  <span className="text-emerald-400 font-bold font-mono">Kunlik / Haftalik / Oylik</span>
                 </div>
-                <p className="text-[9px] text-slate-500">
-                  Ushbu aqlli darvoza hovlidagi datchik bo'lib hohlagan kishi o'tishi mumkin. Baza ma'lumotlarimizda bor shaxs bo'lsa darvoza ochiladi, begona bo'lsa darvoza ochilmaydi.
+                <p className="text-[9.5px] text-slate-400 leading-relaxed">
+                  Barcha biometrik keldi-ketdi ma'lumotlari avtomatik bazada saqlanadi hamda Direktor va Admin bo'limida har bir bog'cha uchun alohida ajratilgan (isolated) holatda hisoblanadi.
                 </p>
               </div>
 
-              {/* Olib ketayotgan vasiy (Faqat chiqish darvozalari uchun) */}
-              {[
-                "192.168.1.226",
-                "192.168.1.227",
-                "192.168.1.228",
-                "192.168.1.229",
-                "192.168.1.230"
-              ].includes(deviceIp) && (
-                <div className="space-y-1.5 p-3 rounded-2xl bg-sky-500/5 border border-sky-500/10 animate-fade-in">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] text-sky-400 font-bold uppercase tracking-wider block">👤 Olib ketuvchi vasiy ismi:</label>
-                    <span className="text-[8px] bg-sky-500/15 text-sky-400 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">CHIQISH NAZORATI</span>
-                  </div>
-                  <input
-                    type="text"
-                    value={checkoutPersonName}
-                    onChange={(e) => setCheckoutPersonName(e.target.value)}
-                    placeholder="Masalan: Otasi (Dilshod Karimov)"
-                    className="w-full bg-slate-950 border border-slate-850 focus:border-sky-500 rounded-xl py-2 px-3 text-white text-xs outline-none font-medium"
-                    required
-                  />
-                  <p className="text-[8px] text-slate-500 leading-normal">
-                    * Chiqish datchigi orqali bolani olib ketayotgan shaxs ismi va kameradagi "Bola + Vasiy" surati ota-onaga Telegram hamda SMS orqali yuboriladi.
-                  </p>
-                </div>
-              )}
-
-              {/* Smart temperature scanner slider */}
-              <div className="bg-slate-950 p-3 rounded-2xl border border-slate-850 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                    <Thermometer className="w-3.5 h-3.5 text-rose-400" />
-                    Tana Harorati datchigi:
-                  </span>
-                  <span className={`text-xs font-black font-mono ${temperature >= 38 ? "text-rose-400 animate-pulse" : "text-emerald-400"}`}>
-                    {temperature}°C
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="35.8"
-                  max="39.5"
-                  step="0.1"
-                  value={temperature}
-                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  className="w-full accent-rose-500 bg-slate-900 cursor-pointer h-1 rounded-lg"
-                />
-                <div className="flex justify-between text-[8px] text-slate-500 font-mono">
-                  <span>36.0°C (Sog'lom)</span>
-                  <span>37.5°C</span>
-                  <span className="text-rose-500 font-bold">38.5°C (Isitma xavfi)</span>
-                </div>
-              </div>
-
-              {/* DATCHIK QO'SHIMCHA SOZLAMALARI: AUTO-LOCK & LIVE WEBCAM SNAPSHOT */}
-              <div className="bg-slate-950/50 border border-slate-850/80 p-3 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-sky-400">
-                      <Lock className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-white font-bold block">Smart Auto-Lock (5s)</span>
-                      <span className="text-[8.5px] text-slate-400 block">Skanerlashdan 5 soniya o'tib darvozani yopish</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setAutoLock(!autoLock)}
-                    className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-300 relative cursor-pointer ${
-                      autoLock ? "bg-emerald-500" : "bg-slate-800"
-                    }`}
-                  >
-                    <div
-                      className={`w-4 h-4 rounded-full bg-slate-950 shadow-md transition-transform duration-300 transform ${
-                        autoLock ? "translate-x-4" : "translate-x-0"
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* PRIVACY SHUTTER TOGGLE */}
-                <div className="flex items-center justify-between border-t border-slate-850/60 pt-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-amber-500">
-                      <Lock className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-white font-bold block">Privacy Shutter (Maxfiylik pardasi)</span>
-                      <span className="text-[8.5px] text-slate-400 block">Kamerani jismoniy tarmoqdan uzish</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextState = !privacyShutterActive;
-                      setPrivacyShutterActive(nextState);
-                      if (nextState && cameraActive) {
-                        stopCamera();
-                      }
-                      addLog(
-                        nextState
-                          ? "🔒 Maxfiylik pardasi YOPILDI. Kamera oqimi xavfsizlik uchun uzildi."
-                          : "🔓 Maxfiylik pardasi OCHILDI. Kamera oqimidan foydalanish mumkin.",
-                        nextState ? "warning" : "success"
-                      );
-                    }}
-                    className={`px-3 py-1 rounded-xl text-[9px] font-mono font-black border transition-all uppercase cursor-pointer ${
-                      privacyShutterActive
-                        ? "bg-amber-500/25 border-amber-500/40 text-amber-300"
-                        : "bg-slate-950 border-slate-850 text-slate-400 hover:text-white"
-                    }`}
-                  >
-                    {privacyShutterActive ? "CLOSED" : "OPEN"}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-slate-850/60 pt-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-emerald-400">
-                      <Camera className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-white font-bold block">Live Web-Camera Feed</span>
-                      <span className="text-[8.5px] text-slate-400 block">Kamera orqali haqiqiy surat olish (MediaDevices API)</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={cameraActive ? stopCamera : startCamera}
-                    disabled={privacyShutterActive}
-                    className={`px-3 py-1 rounded-xl text-[9px] font-mono font-black border transition-all uppercase cursor-pointer ${
-                      privacyShutterActive
-                        ? "bg-slate-900 border-slate-850 text-slate-600 cursor-not-allowed"
-                        : cameraActive
-                          ? "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-rose-500/20"
-                          : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                    }`}
-                  >
-                    {cameraActive ? "OFF" : "ON"}
-                  </button>
-                </div>
-
-                {/* Camera stream display within the form */}
-                {cameraActive && !privacyShutterActive ? (
-                  <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950 relative h-48 flex items-center justify-center shadow-inner">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="w-full h-full object-cover"
-                      style={{
-                        transform: `scaleX(-1) rotate(${cameraRotation}deg)`,
-                        transition: "transform 0.3s ease"
-                      }}
-                    />
-                    
-                    {/* Camera Control Overlays (Interactive) */}
-                    <div className="absolute bottom-2 right-2 flex gap-1.5 z-10 pointer-events-auto">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCameraRotation((prev) => ((prev + 90) % 360) as any);
-                          addLog(`🔄 Kamera burildi: ${((cameraRotation + 90) % 360)}°`, "success");
-                        }}
-                        className="bg-slate-900/95 hover:bg-slate-850 border border-slate-800 p-1.5 rounded-lg text-slate-300 hover:text-emerald-400 cursor-pointer active:scale-95 transition-all shadow"
-                        title="Kamerani burish (Rotate 90°)"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  privacyShutterActive && (
-                    <div className="border-2 border-dashed border-amber-500/30 rounded-xl overflow-hidden bg-slate-950/90 relative h-48 flex flex-col items-center justify-center p-4 text-center space-y-2 animate-fade-in">
-                      <div className="bg-amber-500/10 text-amber-400 p-3 rounded-full border border-amber-500/20">
-                        <Lock className="w-6 h-6 animate-pulse" />
-                      </div>
-                      <div>
-                        <h4 className="text-amber-400 font-bold text-xs uppercase tracking-wider">Privacy Shutter Faol</h4>
-                        <p className="text-[9px] text-slate-400 mt-1 max-w-[200px] leading-relaxed mx-auto">
-                          Kamera jismoniy tarmoqdan uzilgan. Live video oqimi bloklandi. Foydalanish uchun pardani oching (OPEN).
-                        </p>
-                      </div>
-                    </div>
-                  )
-                )}
-
-                {/* Snapshot display thumb if captured */}
-                {capturedImage && (
-                  <div className="bg-slate-950 border border-slate-850 p-2 rounded-xl flex items-center gap-3">
-                    <img
-                      src={capturedImage}
-                      alt="Snapshot"
-                      className="w-10 h-10 rounded-lg object-cover border border-slate-800 shadow-inner"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div>
-                      <span className="text-[8px] text-slate-500 block font-mono uppercase tracking-widest">Olingan Skaner Surati:</span>
-                      <span className="text-[9px] text-emerald-400 font-bold block">Xavfsizlik tizimiga yuborildi ✓</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Action buttons */}
-              <button
-                type="submit"
-                disabled={scanning}
-                className="w-full bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black py-3 rounded-xl text-xs uppercase tracking-wider cursor-pointer shadow-lg shadow-emerald-500/10 active:scale-95 flex items-center justify-center gap-2 mt-2"
-              >
-                {scanning ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                    Skanerlanmoqda...
-                  </>
-                ) : (
-                  <>
-                    <ShieldCheck className="w-4 h-4 animate-pulse" />
-                    Datchikni Ishga Tushirish
-                  </>
-                )}
-              </button>
-
-              {/* SCAN RESULT PANEL */}
-              {result && (
-                <div className={`p-3 rounded-xl border text-xs flex gap-2.5 animate-fade-in ${
-                  result.success
-                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                    : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-                }`}>
-                  {result.success ? <CheckCircle className="w-5 h-5 shrink-0 mt-0.5" /> : <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />}
-                  <div>
-                    <h5 className="font-bold mb-0.5">{result.success ? "Ruxsat etildi ✅" : "Ruxsat berilmadi ❌"}</h5>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">{result.message}</p>
-                    {result.success && (
-                      <span className="text-[9px] text-sky-400 font-black block mt-1 animate-pulse">
-                        💬 Telegram-boti orqali ota-onaga push-bildirishnoma jo'natildi!
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-            </form>
+            </div>
           )}
 
           {/* TAB 2: AI VISION SECURITY CAMERAS */}
