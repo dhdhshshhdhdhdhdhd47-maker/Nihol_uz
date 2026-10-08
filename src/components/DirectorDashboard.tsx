@@ -2760,6 +2760,7 @@ export default function DirectorDashboard({
     { id: "calendar", label: "Kalendar", icon: Calendar },
     { id: "ai", label: "AI Tahlili", icon: Award },
     { id: "ai_cameras", label: "AI Kameralar & Face ID", icon: Camera },
+    { id: "violence_monitor", label: "Zo'ravonlik Monitor", icon: ShieldAlert },
     { id: "complaints", label: `Shikoyatlar (${activeComplaints})`, icon: MessageSquare },
     { id: "notifications", label: "Xabarnomalar", icon: Bell },
     { id: "audit", label: "Xavfsizlik", icon: Shield },
