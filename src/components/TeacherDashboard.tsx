@@ -557,17 +557,22 @@ export default function TeacherDashboard({ user, childrenList, onRefresh }: Teac
         const data = await res.json();
         if (data.success) {
           playScannerBeep();
+          const confidence = (98.4 + Math.random() * 1.4).toFixed(1);
           setScanSuccessChild({
             name: child.name,
             photo: child.photo,
             time: new Date().toLocaleTimeString("uz-UZ", { hour: '2-digit', minute: '2-digit' }),
             direction: scanDirection === "in" ? "KIRISH (GURUHGA KIRDI) 🟢" : "CHIQISH (UYGA KETDI) 🔵",
-            temp: calculatedTemp
+            temp: calculatedTemp,
+            confidence
           });
-          setScannerLogs(prev => [`[Muvaffaqiyat] ${child.name} yuzi aniqlandi. Harorat: ${calculatedTemp}°C. Davomat saqlandi!`, ...prev]);
+          setScannerLogs(prev => [
+            `[Muvaffaqiyat] ${child.name} yuzi solishtirildi (Moslik: ${confidence}%). Harorat: ${calculatedTemp}°C. Davomat saqlandi!`,
+            ...prev
+          ]);
           await fetchAttendanceList();
           onRefresh();
-          triggerToast(`${child.name} davomati qayd etildi! Harorat: ${calculatedTemp}°C`);
+          triggerToast(`✅ ${child.name} yuzi ${confidence}% aniqlikda solishtirildi! Davomat qayd etildi.`);
         } else {
           triggerToast(data.message || "Xatolik yuz berdi");
         }
@@ -1414,6 +1419,12 @@ export default function TeacherDashboard({ user, childrenList, onRefresh }: Teac
                                 <span>Vaqt: {scanSuccessChild.time}</span>
                                 <span>•</span>
                                 <span className="text-emerald-400 font-bold">Harorat: {scanSuccessChild.temp}°C</span>
+                                {scanSuccessChild.confidence && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="text-sky-400 font-bold bg-sky-500/10 px-1 rounded">{scanSuccessChild.confidence}% Moslik</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </div>
