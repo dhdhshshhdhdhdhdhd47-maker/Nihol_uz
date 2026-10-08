@@ -712,17 +712,18 @@ export default function AiCamerasPage({ childrenList, onScanComplete }: AiCamera
           </div>
         </div>
 
-        {/* Middle Column: Displays Selected Camera in Large Feed */}
-        <div className="xl:col-span-7 space-y-4">
-          <div className="bg-slate-900 border border-slate-850 p-4 rounded-3xl space-y-3.5 shadow-2xl relative">
-            <div className="flex justify-between items-center">
+        {/* Main Column: Camera feed + LARGE Face ID Hero Section */}
+        <div className="xl:col-span-10 space-y-5">
+
+          {/* Camera Feed */}
+          <div className="bg-slate-900 border border-slate-850 p-4 rounded-3xl shadow-2xl">
+            <div className="flex justify-between items-center mb-3.5">
               <div>
                 <span className="text-[9px] font-mono text-emerald-400 font-bold uppercase bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
                   {selectedCam.id} Live Feed
                 </span>
                 <h3 className="text-white text-sm font-black mt-1 leading-none">{selectedCam.name}</h3>
               </div>
-
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
@@ -750,8 +751,8 @@ export default function AiCamerasPage({ childrenList, onScanComplete }: AiCamera
               </div>
             </div>
 
-            {/* Huge Clear CCTV Feed Container */}
-            <div className="bg-slate-950 rounded-2xl border-2 border-slate-850 relative overflow-hidden aspect-video shadow-inner shadow-black">
+            {/* Large CCTV Feed */}
+            <div className="bg-slate-950 rounded-2xl border-2 border-slate-850 relative overflow-hidden shadow-inner shadow-black" style={{aspectRatio: "16/7"}}>
               {webcamActive && (
                 <video
                   ref={videoRef}
@@ -761,113 +762,190 @@ export default function AiCamerasPage({ childrenList, onScanComplete }: AiCamera
                   className="absolute inset-0 w-full h-full object-cover transform -scale-x-100"
                 />
               )}
-
               <canvas
                 ref={canvasRef}
                 width={640}
                 height={360}
                 className="absolute inset-0 w-full h-full"
               />
-
-              {/* Interlaced scan overlay and high tech radar effect */}
               <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_30%,rgba(0,0,0,0.4))] mix-blend-overlay"></div>
-              <div className="absolute inset-0 pointer-events-none border border-slate-800/10 rounded-2xl"></div>
             </div>
+          </div>
 
-            {/* AI Real-time Face ID Biometric Comparison Controls */}
-            <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-850 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Camera className="w-4 h-4 text-emerald-400" />
-                  <span className="text-[10px] font-black uppercase text-slate-200 tracking-wider">Face ID Biometrik Aniqlash & Solishtirish</span>
+          {/* ===== FACE ID HERO SECTION ===== */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            
+            {/* Left: Face ID Scanner UI (BIG) */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/20 rounded-3xl p-6 shadow-2xl shadow-emerald-500/5 relative overflow-hidden">
+              {/* Background glow */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(16,185,129,0.06),transparent_60%)] pointer-events-none" />
+              
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-white font-black text-base flex items-center gap-2">
+                    <span className="w-3 h-3 bg-emerald-500 rounded-full animate-ping shrink-0" />
+                    Face ID Biometrik Tizim
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Real-vaqt yuz aniqlash va solishtirish</p>
                 </div>
-                <span className="bg-emerald-500/10 text-emerald-400 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border border-emerald-500/20">
-                  Real-time Neural Match
+                <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-black px-3 py-1.5 rounded-full">
+                  Neural Match v2.8
                 </span>
               </div>
 
-              {/* Selector */}
-              <div className="space-y-1">
-                <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Solishtiriluvchi Shaxs (Yoki Avtomatik AI Skaner):</label>
+              {/* LARGE Biometric Scanner Ring */}
+              <div className="flex flex-col items-center justify-center py-4 mb-5">
+                <div className="relative flex items-center justify-center">
+                  {/* Outer pulsing ring */}
+                  <div className={`absolute w-56 h-56 rounded-full border-2 ${matchingFace ? 'border-emerald-500/60 animate-ping' : 'border-emerald-500/15'} transition-all`} />
+                  {/* Middle ring */}
+                  <div className={`absolute w-48 h-48 rounded-full border ${matchingFace ? 'border-emerald-400/50' : 'border-emerald-500/10'} transition-all`} />
+                  {/* Inner scanning ring */}
+                  <div className={`absolute w-44 h-44 rounded-full border-2 ${matchingFace ? 'border-emerald-400 animate-spin' : 'border-emerald-500/20'} border-dashed transition-all`}
+                    style={matchingFace ? {animationDuration: '2s'} : {}} />
+
+                  {/* Face frame */}
+                  <div className="relative w-36 h-36 rounded-full bg-slate-950 border-4 border-emerald-500/30 flex items-center justify-center shadow-2xl shadow-emerald-500/10 overflow-hidden">
+                    {matchedFaceResult ? (
+                      <img
+                        src={matchedFaceResult.child.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(matchedFaceResult.child.name)}&background=0f172a&color=10b981&size=144`}
+                        alt={matchedFaceResult.child.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(matchedFaceResult.child.name)}&background=0f172a&color=10b981&size=144`; }}
+                      />
+                    ) : matchingFace ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[9px] text-emerald-400 font-mono font-bold uppercase tracking-wider">Skanerlash...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-center">
+                        <Shield className="w-10 h-10 text-emerald-500/30" />
+                        <span className="text-[9px] text-slate-500 font-mono">Yuzni skaner qiling</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Corner scan brackets */}
+                  <svg className="absolute w-56 h-56" viewBox="0 0 224 224" fill="none">
+                    <path d="M20 20 L20 50 M20 20 L50 20" stroke="#10b981" strokeWidth="3" strokeLinecap="round" opacity={matchingFace ? "0.9" : "0.4"} />
+                    <path d="M204 20 L204 50 M204 20 L174 20" stroke="#10b981" strokeWidth="3" strokeLinecap="round" opacity={matchingFace ? "0.9" : "0.4"} />
+                    <path d="M20 204 L20 174 M20 204 L50 204" stroke="#10b981" strokeWidth="3" strokeLinecap="round" opacity={matchingFace ? "0.9" : "0.4"} />
+                    <path d="M204 204 L204 174 M204 204 L174 204" stroke="#10b981" strokeWidth="3" strokeLinecap="round" opacity={matchingFace ? "0.9" : "0.4"} />
+                  </svg>
+                </div>
+
+                {/* Status text */}
+                <div className="mt-4 text-center">
+                  {matchingFace ? (
+                    <p className="text-emerald-400 font-black text-sm animate-pulse">⚡ Yuz vektori tahlil qilinmoqda...</p>
+                  ) : matchedFaceResult ? (
+                    <div>
+                      <p className="text-emerald-400 font-black text-sm">✅ {matchedFaceResult.child.name}</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">{matchedFaceResult.direction} • {matchedFaceResult.time}</p>
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-xs">Skanerlash uchun tugmani bosing</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Confidence Bar */}
+              {matchedFaceResult && (
+                <div className="mb-5 space-y-1.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Moslik darajasi:</span>
+                    <span className="text-emerald-400 font-black font-mono text-sm">{matchedFaceResult.confidence}%</span>
+                  </div>
+                  <div className="h-3 bg-slate-950 rounded-full overflow-hidden border border-slate-800">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-1000 shadow-lg shadow-emerald-500/30"
+                      style={{ width: `${matchedFaceResult.confidence}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center gap-3 bg-slate-950 border border-emerald-500/20 p-3 rounded-2xl">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-emerald-500/40 shrink-0">
+                      <img
+                        src={matchedFaceResult.child.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(matchedFaceResult.child.name)}&background=0f172a&color=10b981&size=48`}
+                        alt=""
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(matchedFaceResult.child.name)}&background=0f172a&color=10b981&size=48`; }}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-white font-black text-xs">{matchedFaceResult.child.name}</h4>
+                      <p className="text-[10px] text-emerald-400 font-bold mt-0.5">{matchedFaceResult.direction}</p>
+                      <p className="text-[9px] text-slate-500 font-mono">Harorat: {matchedFaceResult.temp}°C • {matchedFaceResult.time}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-emerald-400 font-black text-lg font-mono block">{matchedFaceResult.confidence}%</span>
+                      <span className="text-[8px] text-emerald-500 font-bold uppercase">ANIQLANDI</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Person Selector */}
+              <div className="space-y-2 mb-4">
+                <label className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Solishtiriluvchi shaxs:</label>
                 <select
                   value={selectedFaceChildId}
                   onChange={(e) => setSelectedFaceChildId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 text-white rounded-xl py-2 px-3 text-xs outline-none font-bold"
+                  className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl py-2.5 px-3 text-xs outline-none font-medium"
                 >
-                  <option value="auto">🤖 Avtomatik yuzni skanerlash va solishtirish</option>
+                  <option value="auto">🤖 Avtomatik AI skanerlash</option>
                   {(childrenList || []).map((c: any) => (
                     <option key={c.id} value={c.id}>{c.name} ({c.group || "Guruh"}) - ID: {c.id}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Big Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handlePerformFaceMatch("in")}
                   disabled={matchingFace}
-                  className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/10"
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 disabled:opacity-50 text-white font-black py-4 px-4 rounded-2xl text-sm flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xl shadow-emerald-500/20 active:scale-95"
                 >
                   {matchingFace ? (
-                    <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                    <span className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" style={{borderWidth: '3px'}}></span>
                   ) : (
-                    <CheckCircle className="w-4 h-4" />
+                    <CheckCircle className="w-6 h-6" />
                   )}
-                  <span>Yuzni Solishtirish (Kirdi 🟢)</span>
+                  <span>KIRDI 🟢</span>
+                  <span className="text-[9px] opacity-75 font-medium">Bog'chaga keldi</span>
                 </button>
                 <button
                   onClick={() => handlePerformFaceMatch("out")}
                   disabled={matchingFace}
-                  className="bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-slate-950 font-black py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-sky-500/10"
+                  className="bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-500 hover:to-sky-400 disabled:opacity-50 text-white font-black py-4 px-4 rounded-2xl text-sm flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xl shadow-sky-500/20 active:scale-95"
                 >
                   {matchingFace ? (
-                    <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                    <span className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" style={{borderWidth: '3px'}}></span>
                   ) : (
-                    <Camera className="w-4 h-4" />
+                    <Camera className="w-6 h-6" />
                   )}
-                  <span>Yuzni Solishtirish (Ketdi 🔵)</span>
+                  <span>KETDI 🔵</span>
+                  <span className="text-[9px] opacity-75 font-medium">Uyga qaytdi</span>
                 </button>
               </div>
+            </div>
 
-              {/* Matched Result Card */}
-              {matchedFaceResult && (
-                <div className="bg-slate-900 border border-emerald-500/40 p-3 rounded-xl flex items-center justify-between animate-fade-in gap-3">
-                  <div className="flex items-center gap-2.5">
-                    <img
-                      src={matchedFaceResult.child.photo || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"}
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover border border-emerald-500/40 shrink-0"
-                    />
-                    <div>
-                      <h5 className="text-white font-black text-xs">{matchedFaceResult.child.name}</h5>
-                      <p className="text-[10px] text-emerald-400 font-bold">
-                        {matchedFaceResult.direction} • {matchedFaceResult.time}
-                      </p>
-                      <span className="text-[9px] text-slate-400 font-mono">
-                        Harorat: {matchedFaceResult.temp}°C
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black px-2 py-1 rounded-lg block font-mono">
-                      {matchedFaceResult.confidence}% Moslik
-                    </span>
-                    <span className="text-[8px] text-slate-500 mt-0.5 block font-bold uppercase">Aniq Solishtirildi</span>
-                  </div>
-                </div>
-              )}
+            {/* Right: AI Log Console + FaceId Device Panel */}
+            <div className="space-y-4">
+              {/* FaceIdSimulator Device Panel */}
+              <FaceIdSimulator childrenList={childrenList} onScanComplete={onScanComplete || (() => {})} />
             </div>
           </div>
 
-          {/* Dynamic AI log console */}
+          {/* AI Log Console */}
           <div className="bg-slate-900 border border-slate-850 p-4 rounded-3xl space-y-2.5">
             <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">AI Tizimining Xavfsizlik Jurnali:</span>
-            
             <div className="space-y-1.5 max-h-[160px] overflow-y-auto font-mono text-[10px] text-slate-400 pr-1.5 scrollbar-thin scrollbar-thumb-slate-850">
               {aiLogs.map((log) => (
                 <div key={log.id} className="p-2 bg-slate-950 rounded-xl border border-slate-850/60 flex items-start gap-2.5">
                   <span className="text-slate-600 shrink-0">[{log.time}]</span>
-                  <span className={`shrink-0 font-bold uppercase text-[9px] px-1.5 py-0.2 rounded ${
+                  <span className={`shrink-0 font-bold uppercase text-[9px] px-1.5 py-0.5 rounded ${
                     log.type === "danger" 
                       ? "bg-rose-500/10 text-rose-400" 
                       : log.type === "warn" 
@@ -881,11 +959,6 @@ export default function AiCamerasPage({ childrenList, onScanComplete }: AiCamera
               ))}
             </div>
           </div>
-        </div>
-
-        {/* Third Column: Face ID Biometric Simulator (placed right next to live AI camera feed) */}
-        <div className="xl:col-span-3 space-y-4">
-          <FaceIdSimulator childrenList={childrenList} onScanComplete={onScanComplete || (() => {})} />
         </div>
       </div>
     </div>
