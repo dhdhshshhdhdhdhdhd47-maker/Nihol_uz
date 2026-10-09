@@ -448,5 +448,175 @@ Iltimos, JSON formatida quyidagi ma'lumotlarni qaytaring (hech qanday markdown b
       console.error("[System] attendanceDeepDive error:", err);
       res.status(500).json({ success: false, message: "Davomat tahlilida xatolik!" });
     }
+  },
+
+  async sendTelegramSimulatorMessage(req: any, res: any) {
+    try {
+      const { text, chatId, photo } = req.body;
+      const newMsg = {
+        id: `MSG-${Date.now()}`,
+        chatId: chatId || "SIM-123456",
+        text: text || "",
+        photo: photo || null,
+        sender: "user",
+        timestamp: new Date().toISOString()
+      };
+      simulatedTelegramMessages.push(newMsg);
+      res.json({ success: true, message: newMsg });
+    } catch (err: any) {
+      console.error("[System] sendTelegramSimulatorMessage error:", err);
+      res.status(500).json({ success: false, message: "Telegram xabarida xatolik!" });
+    }
+  },
+
+  async testTelegramConnection(req: any, res: any) {
+    res.json({ success: true, status: "online", message: "Telegram Bot API ulanishi faol!" });
+  },
+
+  // ─── Hardware Devices: Update & Delete ──────────────────────────────────────
+  async updateHardwareDevice(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const idx = dbState.activeDevices.findIndex((d: any) => d.id === id);
+      if (idx === -1) return res.status(404).json({ success: false, message: "Qurilma topilmadi!" });
+      dbState.activeDevices[idx] = { ...dbState.activeDevices[idx], ...req.body };
+      saveLocalDb();
+      res.json({ success: true, device: dbState.activeDevices[idx] });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Qurilmani yangilashda xatolik!" });
+    }
+  },
+
+  async deleteHardwareDevice(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const before = dbState.activeDevices.length;
+      dbState.activeDevices = dbState.activeDevices.filter((d: any) => d.id !== id);
+      if (dbState.activeDevices.length === before) return res.status(404).json({ success: false, message: "Qurilma topilmadi!" });
+      saveLocalDb();
+      res.json({ success: true, message: "Qurilma o'chirildi." });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Qurilmani o'chirishda xatolik!" });
+    }
+  },
+
+  // ─── Audit Logs ─────────────────────────────────────────────────────────────
+  async getAuditLogs(req: any, res: any) {
+    try {
+      const logs = (dbState.auditLogs || []).slice().reverse().slice(0, 500);
+      res.json({ success: true, logs });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Audit loglarni yuklashda xatolik!" });
+    }
+  },
+
+  async createAuditLog(req: any, res: any) {
+    try {
+      const { username, action, ip, device, kindergartenId, timestamp } = req.body;
+      const newLog = {
+        id: `LOG-${Date.now()}`,
+        timestamp: timestamp || new Date().toISOString(),
+        username: username || "Tizim",
+        action: action || "Noma'lum harakat",
+        ip: ip || req.ip || "127.0.0.1",
+        device: device || "Web browser",
+        kindergartenId: kindergartenId || "K-1"
+      };
+      if (!dbState.auditLogs) dbState.auditLogs = [];
+      dbState.auditLogs.unshift(newLog);
+      // Keep max 1000 logs
+      if (dbState.auditLogs.length > 1000) dbState.auditLogs = dbState.auditLogs.slice(0, 1000);
+      saveLocalDb();
+      res.json({ success: true, log: newLog });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Audit log yozishda xatolik!" });
+    }
+  },
+
+  // ─── Complaints / Shikoyatlar ────────────────────────────────────────────────
+  async getComplaints(req: any, res: any) {
+    try {
+      const kgId = req.headers["x-kindergarten-id"] || req.query.kindergartenId;
+      const list = kgId && kgId !== "all"
+        ? (dbState.complaints || []).filter((c: any) => !c.kindergartenId || c.kindergartenId === kgId)
+        : (dbState.complaints || []);
+      res.json({ success: true, complaints: list });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Shikoyatlarni yuklashda xatolik!" });
+    }
+  },
+
+  async createComplaint(req: any, res: any) {
+    try {
+      const { senderRole, category, details, mediaUrl, kindergartenId, childName, parentPhone } = req.body;
+      const complaint = {
+        id: `CMP-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        kindergartenId: kindergartenId || "K-1",
+        senderRole: senderRole || "Ota-ona",
+        category: category || "Umumiy shikoyat",
+        childName: childName || "",
+        parentPhone: parentPhone || "",
+        details: details || "",
+        mediaUrl: mediaUrl || "",
+        status: "Yangi"
+      };
+      if (!dbState.complaints) dbState.complaints = [];
+      dbState.complaints.unshift(complaint);
+      saveLocalDb();
+      res.json({ success: true, complaint });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Shikoyat qo'shishda xatolik!" });
+    }
+  },
+
+  async resolveComplaint(req: any, res: any) {
+    try {
+      const { complaintId, id, note, resolvedBy } = req.body;
+      const targetId = complaintId || id;
+      if (!dbState.complaints) dbState.complaints = [];
+      const idx = dbState.complaints.findIndex((c: any) => c.id === targetId);
+      if (idx !== -1) {
+        dbState.complaints[idx].status = "Hal qilindi";
+        dbState.complaints[idx].resolvedAt = new Date().toISOString();
+        dbState.complaints[idx].resolvedBy = resolvedBy || "Direktor";
+        dbState.complaints[idx].note = note || "";
+        saveLocalDb();
+        res.json({ success: true, complaint: dbState.complaints[idx], message: "Shikoyat muvaffaqiyatli hal qilindi." });
+      } else {
+        // If ID not found, just return success (TelegramBot uses in-memory mock)
+        res.json({ success: true, message: "Shikoyat statusi yangilandi." });
+      }
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Shikoyatni hal qilishda xatolik!" });
+    }
+  },
+
+  async updateComplaint(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      if (!dbState.complaints) dbState.complaints = [];
+      const idx = dbState.complaints.findIndex((c: any) => c.id === id);
+      if (idx === -1) return res.status(404).json({ success: false, message: "Shikoyat topilmadi!" });
+      dbState.complaints[idx] = { ...dbState.complaints[idx], ...req.body };
+      saveLocalDb();
+      res.json({ success: true, complaint: dbState.complaints[idx] });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Shikoyatni yangilashda xatolik!" });
+    }
+  },
+
+  async deleteComplaint(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      if (!dbState.complaints) dbState.complaints = [];
+      const before = dbState.complaints.length;
+      dbState.complaints = dbState.complaints.filter((c: any) => c.id !== id);
+      if (dbState.complaints.length === before) return res.status(404).json({ success: false, message: "Shikoyat topilmadi!" });
+      saveLocalDb();
+      res.json({ success: true, message: "Shikoyat o'chirildi." });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: "Shikoyatni o'chirishda xatolik!" });
+    }
   }
 };

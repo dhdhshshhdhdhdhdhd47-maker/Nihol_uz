@@ -16,6 +16,8 @@ router.post("/children/bulk-reminder", ChildController.bulkReminder);
 // Medical card
 router.get("/medical/cards", validateKindergartenData, ChildController.getMedicalCards);
 router.put("/medical/card", validateKindergartenData, ChildController.updateMedicalCard);
+router.put("/medical/update", validateKindergartenData, ChildController.updateMedicalCard);
+router.post("/medical/update", validateKindergartenData, ChildController.updateMedicalCard);
 
 // Educational & play activities
 router.get("/activities", validateKindergartenData, ChildController.getActivities);

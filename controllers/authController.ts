@@ -234,5 +234,47 @@ export const AuthController = {
       console.error("[Auth] Update avatar error:", err);
       res.status(500).json({ success: false, message: "Profil rasm qabul qilinishida xatolik!" });
     }
+  },
+
+  async linkTelegram(req: any, res: any) {
+    try {
+      const { userId, telegramChatId, username } = req.body;
+      if (!userId || !telegramChatId) {
+        return res.status(400).json({ success: false, message: "Foydalanuvchi ID va Telegram Chat ID majburiy!" });
+      }
+
+      const emp = await EmployeeModel.getById(userId);
+      if (!emp) {
+        return res.status(404).json({ success: false, message: "Foydalanuvchi topilmadi!" });
+      }
+
+      const updatedEmp = await EmployeeModel.update(userId, {
+        telegramChatId: String(telegramChatId),
+        telegramUsername: username || ""
+      });
+
+      await AuditLogModel.create({
+        id: `LOG-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: updatedEmp.name,
+        action: `Telegram ulandi: @${username || telegramChatId}`,
+        ip: req.ip || "127.0.0.1",
+        device: "Telegram Bot",
+        kindergartenId: updatedEmp.kindergartenId || "K-1"
+      });
+
+      res.json({
+        success: true,
+        message: "Telegram muvaffaqiyatli ulandi!",
+        user: {
+          id: updatedEmp.id,
+          telegramChatId: updatedEmp.telegramChatId,
+          telegramUsername: updatedEmp.telegramUsername
+        }
+      });
+    } catch (err: any) {
+      console.error("[Auth] linkTelegram error:", err);
+      res.status(500).json({ success: false, message: "Telegram ulashda xatolik!" });
+    }
   }
 };

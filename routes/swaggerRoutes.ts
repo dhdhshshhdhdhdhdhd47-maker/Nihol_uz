@@ -208,11 +208,89 @@ const openApiSpec = {
         responses: { 200: { description: "Yuz mos keldi / mos kelmadi" } }
       }
     },
+    "/medical/cards": {
+      get: {
+        summary: "Hamshira paneli: barcha bolalarning tibbiy kartalari",
+        tags: ["Nurse & Medical"],
+        responses: { 200: { description: "Tibbiy kartalar ro'yxati" } }
+      }
+    },
+    "/medical/update": {
+      put: {
+        summary: "Hamshira paneli: bola tibbiy kartasini yangilash",
+        tags: ["Nurse & Medical"],
+        responses: { 200: { description: "Yangilangan tibbiy karta" } }
+      }
+    },
+    "/activities": {
+      get: {
+        summary: "Tarbiyachi paneli: kunlik mashg'ulotlar ro'yxati",
+        tags: ["Teacher & Activities"],
+        responses: { 200: { description: "Mashg'ulotlar" } }
+      },
+      post: {
+        summary: "Tarbiyachi paneli: yangi mashg'ulot yozish",
+        tags: ["Teacher & Activities"],
+        responses: { 200: { description: "Yaratilgan mashg'ulot" } }
+      }
+    },
+    "/activities/analyze-image": {
+      post: {
+        summary: "Tarbiyachi paneli: AI dars rasmini tahlil qilish",
+        tags: ["Teacher & Activities"],
+        responses: { 200: { description: "AI tahlil natijasi" } }
+      }
+    },
     "/chef/dashboard": {
       get: {
-        summary: "Oshpaz paneli statistikasi va menyu",
+        summary: "Oshpaz paneli statistikasi va taomnoma",
         tags: ["Chef & Kitchen"],
         responses: { 200: { description: "Oshpaz ma'lumotlari" } }
+      }
+    },
+    "/menus": {
+      get: {
+        summary: "Oshpaz paneli: taomnomalar ro'yxati",
+        tags: ["Chef & Kitchen"],
+        responses: { 200: { description: "Taomnomalar" } }
+      },
+      post: {
+        summary: "Oshpaz paneli: taomnomani yangilash",
+        tags: ["Chef & Kitchen"],
+        responses: { 200: { description: "Yangilangan taomnoma" } }
+      }
+    },
+    "/ingredients": {
+      get: {
+        summary: "Oshpaz paneli: ombor masalliqlari",
+        tags: ["Chef & Kitchen"],
+        responses: { 200: { description: "Masalliqlar" } }
+      },
+      post: {
+        summary: "Oshpaz paneli: yangi masalliq qo'shish",
+        tags: ["Chef & Kitchen"],
+        responses: { 200: { description: "Yangi masalliq" } }
+      }
+    },
+    "/telegram-simulator/status": {
+      get: {
+        summary: "Telegram Bot & Simulator holatini ko'rish",
+        tags: ["Telegram Bot & Simulator"],
+        responses: { 200: { description: "Bot holati" } }
+      }
+    },
+    "/telegram-simulator/message": {
+      post: {
+        summary: "Telegram bot simulyatoriga xabar yuborish",
+        tags: ["Telegram Bot & Simulator"],
+        responses: { 200: { description: "Yuborilgan xabar" } }
+      }
+    },
+    "/telegram-simulator/test-connection": {
+      post: {
+        summary: "Telegram Bot API ulanishini sinash",
+        tags: ["Telegram Bot & Simulator"],
+        responses: { 200: { description: "Ulanish test natijasi" } }
       }
     },
     "/hardware/status": {
