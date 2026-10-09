@@ -668,7 +668,7 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
   const [autoLock, setAutoLock] = useState(true);
   const [cameraActive, setCameraActive] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [checkoutPersonName, setCheckoutPersonName] = useState("Otasi (Dilshod Karimov)");
+  const [checkoutPersonName, setCheckoutPersonName] = useState("Ota-onasi");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const videoRef = React.useRef<HTMLVideoElement | null>(null);
 
@@ -795,9 +795,7 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
     }
     
     // Default placeholder photo to represent successful smart eye scan
-    const defaultPhoto = isExit
-      ? "https://images.unsplash.com/photo-1543269608-fa3d96937649?auto=format&fit=crop&q=80&w=400"
-      : "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200";
+    const defaultPhoto = null;
     setCapturedImage(defaultPhoto);
     addLog(`📸 Virtual kamera snapshot rasm olindi (${isExit ? 'Bola + Vasiy' : 'Bola'}).`, "success");
     return defaultPhoto;
@@ -982,7 +980,7 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
 
   // TRIGGER AI VISION SECURITY INCIDENT (FALL, FIGHT, CRYING, FIRE)
   const triggerAiVisionIncident = async (incident: "fall" | "fight" | "crying" | "fire") => {
-    const matchedChild = childrenList[Math.floor(Math.random() * childrenList.length)] || { id: "B-101", name: "Karimova Madina" };
+    const matchedChild = childrenList[Math.floor(Math.random() * childrenList.length)] || { id: "UNKNOWN", name: "Noma'lum bola" };
     let logAction = "";
     let alertMsg = "";
 

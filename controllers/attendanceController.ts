@@ -48,7 +48,7 @@ async function biometricSearch(capturedBase64: string, candidates: any[]): Promi
 
     // Build descriptions of candidate photos (limit to first 25 for prompt safety)
     const candidateDescriptions = candidates.slice(0, 25).map((c, i) => {
-      const photoUrl = c.photo || c.avatar || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200";
+      const photoUrl = c.photo || c.avatar || "";
       return `${i + 1}. ID: "${c.id}", Name: "${c.name}", Photo URL: "${photoUrl}"`;
     }).join("\n");
 
@@ -538,8 +538,8 @@ export const AttendanceController = {
           } else {
             dbState.attendance[existingIndex].checkOut = timeString;
             dbState.attendance[existingIndex].status = "Ketdi";
-            dbState.attendance[existingIndex].checkoutPersonName = checkoutPersonName || "Otasi (Dilshod Karimov)";
-            dbState.attendance[existingIndex].checkoutPhoto = checkoutPhoto || "https://images.unsplash.com/photo-1543269608-fa3d96937649?auto=format&fit=crop&q=80&w=400";
+            dbState.attendance[existingIndex].checkoutPersonName = checkoutPersonName || "Ota-onasi";
+            dbState.attendance[existingIndex].checkoutPhoto = checkoutPhoto || null;
           }
           dbState.attendance[existingIndex].deviceIp = finalDeviceIp;
           dbState.attendance[existingIndex].temperature = Number(finalTemperature || 36.5);
@@ -553,8 +553,8 @@ export const AttendanceController = {
             status: status,
             reason: null,
             deviceIp: finalDeviceIp,
-            checkoutPersonName: isEntrance ? undefined : (checkoutPersonName || "Otasi (Dilshod Karimov)"),
-            checkoutPhoto: isEntrance ? undefined : (checkoutPhoto || "https://images.unsplash.com/photo-1543269608-fa3d96937649?auto=format&fit=crop&q=80&w=400"),
+            checkoutPersonName: isEntrance ? undefined : (checkoutPersonName || "Ota-onasi"),
+            checkoutPhoto: isEntrance ? undefined : (checkoutPhoto || null),
             temperature: Number(finalTemperature || 36.5),
             kindergartenId: child.kindergartenId || "K-1"
           };
@@ -565,7 +565,7 @@ export const AttendanceController = {
 
         const logMessage = isEntrance 
           ? `Face ID skaneri orqali ${child.name} - Keldi (${timeString}) deb belgilandi. Harorat: ${finalTemperature || '36.5'}°C.`
-          : `Face ID skaneri orqali ${child.name} - Ketdi (${timeString}) deb belgilandi. Olib ketdi: ${checkoutPersonName || "Otasi (Dilshod Karimov)"}. Harorat: ${finalTemperature || '36.5'}°C.`;
+          : `Face ID skaneri orqali ${child.name} - Ketdi (${timeString}) deb belgilandi. Olib ketdi: ${checkoutPersonName || "Ota-onasi"}. Harorat: ${finalTemperature || '36.5'}°C.`;
 
         await AuditLogModel.create({
           id: `LOG-${Date.now()}`,
@@ -651,14 +651,16 @@ export const AttendanceController = {
             const hasAtt = dbState.attendance.some(a => a.childId === emp.id && a.date === todayStr && (direction === "in" ? a.checkIn : a.checkOut));
             return !hasAtt;
           }) || employees[0];
-          targetId = unscannedEmp ? unscannedEmp.id : "E-101";
+          targetId = unscannedEmp?.id || null;
+          if (!targetId) return res.status(400).json({ success: false, message: "Xodim topilmadi! Avval xodimlarni ro'yxatdan o'tkazing." });
         } else {
           const children = dbState.children;
           const unscannedChild = children.find(c => {
             const hasAtt = dbState.attendance.some(a => a.childId === c.id && a.date === todayStr && (direction === "in" ? a.checkIn : a.checkOut));
             return !hasAtt;
           }) || children[0];
-          targetId = unscannedChild ? unscannedChild.id : "B-101";
+          targetId = unscannedChild?.id || null;
+          if (!targetId) return res.status(400).json({ success: false, message: "Bola topilmadi! Avval bolalarni ro'yxatdan o'tkazing." });
         }
       }
 

@@ -56,8 +56,8 @@ export default function TelegramBotSimulator({ onRefresh }: { onRefresh?: () => 
   
   // Registration Auth Flow state
   const [authStep, setAuthStep] = useState<"welcome" | "phone" | "child_id" | "otp" | "connected">("welcome");
-  const [parentPhone, setParentPhone] = useState("+998 90 123-45-67");
-  const [selectedChildId, setSelectedChildId] = useState("B-101");
+  const [parentPhone, setParentPhone] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState("");
   const [otpSent, setOtpSent] = useState("5842");
   const [otpInput, setOtpInput] = useState("");
   const [otpError, setOtpError] = useState("");
@@ -128,16 +128,14 @@ export default function TelegramBotSimulator({ onRefresh }: { onRefresh?: () => 
         }
         
         // Sync connected child data if already linked
-        const matchedChild = childrenData.find((c: Child) => c.id === selectedChildId);
-        if (matchedChild) {
-          setActiveChild(matchedChild);
-          setChildPayments(paymentsData.filter((p: Payment) => p.childId === matchedChild.id));
-          const act = activitiesData.find((a: any) => a.childId === matchedChild.id);
-          setDailyAct(act || {
-            activities: ["Rasm chizish", "Musiqiy raqs", "Ingliz tili darsi"],
-            engagement: 5, discipline: 4, communication: 5, feeding: 5, sleep: 2,
-            teacherNote: "Bugun mashg'ulotlarda juda faol bo'ldi."
-          });
+        const targetChild = childrenData.find((c: Child) => c.id === selectedChildId) || childrenData[0];
+        if (targetChild) {
+          if (!selectedChildId) setSelectedChildId(targetChild.id);
+          if (targetChild.parentPhone && parentPhone === "") setParentPhone(targetChild.parentPhone);
+          setActiveChild(targetChild);
+          setChildPayments(paymentsData.filter((p: Payment) => p.childId === targetChild.id));
+          const act = activitiesData.find((a: any) => a.childId === targetChild.id);
+          setDailyAct(act || null);
         }
       } catch (err) {
         console.error("Error fetching bot simulation data:", err);

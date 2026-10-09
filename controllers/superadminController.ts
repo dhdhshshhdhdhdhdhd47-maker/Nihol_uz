@@ -122,7 +122,7 @@ export const SuperAdminController = {
         const newCmp = {
           id: `CMP-${Date.now().toString().slice(-4)}`,
           parentName: parentName || "Ota-ona",
-          childId: childId || "B-101",
+          childId: childId || "",
           phone: phone || "",
           text: text || "",
           date: new Date().toISOString().split("T")[0],

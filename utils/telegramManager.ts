@@ -288,7 +288,7 @@ export async function sendTelegramMessage(chatId: string, text: string, replyMar
   if (chatId === "SIM-DIRECTOR") {
     recipientName = "Bog'cha Direktori";
   } else if (chatId === "SIM-PARENT") {
-    recipientName = "Karimova Madina (Ota-ona)";
+    recipientName = "Ota-ona (Simulyator)";
   } else {
     const child = dbState.children.find(c => c.telegramChatId === chatId);
     if (child) {

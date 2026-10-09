@@ -14,7 +14,7 @@ export const ParentController = {
       
       let child = children.find(c => c.telegramChatId === cId);
       if (!child && cId.startsWith("SIM-")) {
-        child = children.find(c => c.id === "B-101"); // simulator fallback
+        child = children[0]; // simulator fallback: use first available child
       }
 
       if (!child) {
@@ -89,7 +89,7 @@ export const ParentController = {
       }
 
       if (!child) {
-        return res.status(404).json({ error: "Kiritilgan ma'lumotlar bo'yicha bog'chadan bola topilmadi! Iltimos, ID (masalan: B-101) yoki telefon raqamingizni tekshirib qaytadan urinib ko'ring." });
+        return res.status(404).json({ error: "Kiritilgan ma'lumotlar bo'yicha bog'chadan bola topilmadi! Iltimos, bola ID raqamini yoki telefon raqamingizni tekshirib qaytadan urinib ko'ring." });
       }
 
       child.telegramChatId = telegramChatId.toString();

@@ -207,91 +207,15 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
 
-  // Helper to merge local user modifications and prevent deleted items from reappearing
-  const applyLocalOverrides = (cacheKey: string, sourceList: any[]): any[] => {
-    try {
-      const deletedIds: string[] = JSON.parse(localStorage.getItem(`deleted_${cacheKey}_ids`) || "[]");
-      const addedItems: any[] = JSON.parse(localStorage.getItem(`added_${cacheKey}`) || "[]");
-      const modItems: Record<string, any> = JSON.parse(localStorage.getItem(`modified_${cacheKey}`) || "{}");
+  const [lastSyncTime, setLastSyncTime] = useState<string>("");
 
-      let result = (sourceList || []).filter(item => item && item.id && !deletedIds.includes(item.id));
-      result = result.map(item => modItems[item.id] ? { ...item, ...modItems[item.id] } : item);
-
-      for (const added of addedItems) {
-        if (added && added.id && !result.find(i => i.id === added.id) && !deletedIds.includes(added.id)) {
-          result.unshift(added);
-        }
-      }
-      return result;
-    } catch {
-      return sourceList || [];
-    }
-  };
-
-  const [lastSyncTime, setLastSyncTime] = useState<string>(() => {
-    return localStorage.getItem("cache_lastSyncTime") || "";
-  });
-
-  const [children, setChildren] = useState<Child[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_children");
-      const list = cached ? JSON.parse(cached) : [];
-      return applyLocalOverrides("children", list);
-    } catch {
-      return [];
-    }
-  });
-  const [groups, setGroups] = useState<Group[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_groups");
-      const list = cached ? JSON.parse(cached) : [];
-      return applyLocalOverrides("groups", list);
-    } catch {
-      return [];
-    }
-  });
-  const [employees, setEmployees] = useState<Employee[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_employees");
-      const list = cached ? JSON.parse(cached) : [];
-      return applyLocalOverrides("employees", list);
-    } catch {
-      return [];
-    }
-  });
-  const [complaints, setComplaints] = useState<Complaint[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_complaints");
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_auditLogs");
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [payments, setPayments] = useState<Payment[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_payments");
-      const list = cached ? JSON.parse(cached) : [];
-      return applyLocalOverrides("payments", list);
-    } catch {
-      return [];
-    }
-  });
-  const [meals, setMeals] = useState<MealPlan[]>(() => {
-    try {
-      const cached = localStorage.getItem("cache_meals");
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [children, setChildren] = useState<Child[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [meals, setMeals] = useState<MealPlan[]>([]);
   const [activeSimulator, setActiveSimulator] = useState<"none" | "telegram">("none");
   const [loadingData, setLoadingData] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -464,31 +388,29 @@ export default function App() {
     };
 
     // Non-blocking background updater helper
-    const fetchAndCache = async (url: string, cacheKey: string, setter: (val: any) => void) => {
+    const fetchAndSet = async (url: string, setter: (val: any) => void) => {
       const rawData = await resilientFetch(url, null, !manual);
       if (rawData !== null) {
-        const mergedData = Array.isArray(rawData) ? applyLocalOverrides(cacheKey, rawData) : rawData;
-        setter(mergedData);
-        localStorage.setItem(`cache_${cacheKey}`, JSON.stringify(mergedData));
+        const data = Array.isArray(rawData) ? rawData : [];
+        setter(data);
       }
     };
 
     try {
       const promises = [
-        fetchAndCache(`/api/children?kindergartenId=${kgId}`, "children", setChildren),
-        fetchAndCache(`/api/groups?kindergartenId=${kgId}`, "groups", setGroups),
-        fetchAndCache(`/api/employees?kindergartenId=${kgId}`, "employees", setEmployees),
-        fetchAndCache(`/api/complaints?kindergartenId=${kgId}`, "complaints", setComplaints),
-        fetchAndCache(`/api/audit-logs?kindergartenId=${kgId}`, "auditLogs", setAuditLogs),
-        fetchAndCache(`/api/payments?kindergartenId=${kgId}`, "payments", setPayments),
-        fetchAndCache(`/api/meals?kindergartenId=${kgId}`, "meals", setMeals),
+        fetchAndSet(`/api/children?kindergartenId=${kgId}`, setChildren),
+        fetchAndSet(`/api/groups?kindergartenId=${kgId}`, setGroups),
+        fetchAndSet(`/api/employees?kindergartenId=${kgId}`, setEmployees),
+        fetchAndSet(`/api/complaints?kindergartenId=${kgId}`, setComplaints),
+        fetchAndSet(`/api/audit-logs?kindergartenId=${kgId}`, setAuditLogs),
+        fetchAndSet(`/api/payments?kindergartenId=${kgId}`, setPayments),
+        fetchAndSet(`/api/meals?kindergartenId=${kgId}`, setMeals),
       ];
 
       await Promise.allSettled(promises);
 
       const syncTime = new Date().toLocaleTimeString();
       setLastSyncTime(syncTime);
-      localStorage.setItem("cache_lastSyncTime", syncTime);
     } catch (err) {
       console.error("Xatolik ma'lumotlarni yuklashda:", err);
     } finally {
@@ -815,19 +737,15 @@ export default function App() {
                     onUpdateAvatar={(newAvatar: string) => setCurrentUser({ ...currentUser, avatar: newAvatar })}
                     onUpdateChildren={(newChildren) => {
                       setChildren(newChildren);
-                      try { localStorage.setItem("cache_children", JSON.stringify(newChildren)); } catch(e){}
                     }}
                     onUpdateGroups={(newGroups) => {
                       setGroups(newGroups);
-                      try { localStorage.setItem("cache_groups", JSON.stringify(newGroups)); } catch(e){}
                     }}
                     onUpdateEmployees={(newEmployees) => {
                       setEmployees(newEmployees);
-                      try { localStorage.setItem("cache_employees", JSON.stringify(newEmployees)); } catch(e){}
                     }}
                     onUpdatePayments={(newPayments) => {
                       setPayments(newPayments);
-                      try { localStorage.setItem("cache_payments", JSON.stringify(newPayments)); } catch(e){}
                     }}
                   />
                 )}
