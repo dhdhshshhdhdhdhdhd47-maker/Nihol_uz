@@ -612,7 +612,7 @@ export const AttendanceController = {
     try {
       let { targetId, imageFrame, type, direction, temperature } = req.body;
       const todayStr = new Date().toISOString().split("T")[0];
-      const timeString = new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+      const timeString = formatTimeHHMM();
 
       let biometricExplanation = "";
 

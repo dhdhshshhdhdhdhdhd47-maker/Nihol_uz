@@ -26,6 +26,13 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { Child } from "../types";
 
+export function getFormattedTimeWithSeconds(dateInput?: Date | string): string {
+  const d = dateInput ? (typeof dateInput === "string" ? new Date(dateInput) : dateInput) : new Date();
+  if (isNaN(d.getTime())) return "08:00:00";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 // Audio Feedback utility (Web Audio API beep sound)
 const playBeepSound = (type: "success" | "error" | "warning") => {
   try {
@@ -499,32 +506,39 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
       .catch((err) => console.error("Error fetching employees in FaceIdSimulator:", err));
   }, []);
   const [logs, setLogs] = useState<Array<{ time: string; text: string; type: "success" | "error" | "warning" | "danger" }>>([]);
-  const [historicalLogs, setHistoricalLogs] = useState<HistoricalLog[]>([
-    {
-      id: "H-001",
-      childName: "Kamalov Bilol",
-      timestamp: "08:15:32",
-      method: "Face ID",
-      direction: "KIRISH",
-      snapshot: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"
-    },
-    {
-      id: "H-002",
-      childName: "Karimova Madina",
-      timestamp: "08:18:11",
-      method: "QR Code",
-      direction: "KIRISH",
-      snapshot: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"
-    },
-    {
-      id: "H-003",
-      childName: "Rustamov Sarvar",
-      timestamp: "08:22:45",
-      method: "Face ID",
-      direction: "KIRISH",
-      snapshot: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200"
-    },
-  ]);
+  const [historicalLogs, setHistoricalLogs] = useState<HistoricalLog[]>([]);
+
+  // Fetch REAL attendance logs from database API
+  useEffect(() => {
+    const fetchRealAttendance = async () => {
+      try {
+        const res = await fetch("/api/attendance");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const mapped: HistoricalLog[] = data.slice(0, 15).map((item: any) => {
+              const child = childrenList.find((c) => c.id === item.childId);
+              const employee = employeesList.find((e) => e.id === item.childId);
+              const name = child ? child.name : (employee ? `${employee.name} (${employee.role})` : `Shaxs (ID: ${item.childId})`);
+              const photo = child?.photo || employee?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0f172a&color=10b981&bold=true`;
+              return {
+                id: item.id || `H-${Math.random()}`,
+                childName: name,
+                timestamp: item.checkIn || item.checkOut || item.date || "08:00:00",
+                method: item.reason || "Face ID",
+                direction: item.status === "Ketdi" ? "CHIQISH" : "KIRISH",
+                snapshot: item.checkoutPhoto || photo
+              };
+            });
+            setHistoricalLogs(mapped);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading real attendance:", err);
+      }
+    };
+    fetchRealAttendance();
+  }, [childrenList, employeesList]);
 
   const handleSimulateGateEntry = async () => {
     if (!selectedChildId || !deviceIp || !password) return;
@@ -614,7 +628,7 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
         const newLog: HistoricalLog = {
           id: "H-" + Math.floor(1000 + Math.random() * 9000),
           childName,
-          timestamp: new Date().toLocaleTimeString("uz-UZ"),
+          timestamp: getFormattedTimeWithSeconds(),
           method: methodLabel,
           direction,
           snapshot: photoToSubmit
@@ -837,11 +851,12 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
         { ip: "192.168.1.230", label: "Chiqish Qurilmasi #5 (Kamalak)" },
       ];
 
-  useEffect(() => {
-    if (childrenList.length > 0 && !selectedChildId) {
-      setSelectedChildId(childrenList[0].id);
-    }
-  }, [childrenList]);
+  // Do not auto-select: let the user pick from the dropdown
+  // useEffect(() => {
+  //   if (childrenList.length > 0 && !selectedChildId) {
+  //     setSelectedChildId(childrenList[0].id);
+  //   }
+  // }, [childrenList]);
 
   // Log helper
   const addLog = (text: string, type: "success" | "error" | "warning" | "danger" = "success") => {
@@ -937,7 +952,7 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
         const newLog: HistoricalLog = {
           id: "H-" + Math.floor(1000 + Math.random() * 9000),
           childName,
-          timestamp: new Date().toLocaleTimeString("uz-UZ"),
+          timestamp: getFormattedTimeWithSeconds(),
           method: methodLabel as any,
           direction,
           snapshot: photoToSubmit
@@ -1109,24 +1124,45 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
           {activeTab === "biometric" && (
             <div className="space-y-4 animate-fade-in flex flex-col h-full">
               
-              {/* STATS OVERVIEW CARDS */}
-              <div className="grid grid-cols-3 gap-2 shrink-0">
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Bugungi Davomat</span>
-                  <span className="text-lg font-black text-emerald-400 font-mono block mt-0.5">94.8%</span>
-                  <span className="text-[8px] text-slate-500 font-mono">24/25 Bola kelgan</span>
-                </div>
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Xodimlar Ish Soati (1 Oy)</span>
-                  <span className="text-lg font-black text-sky-400 font-mono block mt-0.5">176 Soat</span>
-                  <span className="text-[8px] text-slate-500 font-mono">O'rtacha 8.0 soat/kun</span>
-                </div>
-                <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
-                  <span className="text-[9px] text-slate-400 font-bold uppercase block">Bolalar Bog'cha Soati (1 Oy)</span>
-                  <span className="text-lg font-black text-amber-400 font-mono block mt-0.5">160 Soat</span>
-                  <span className="text-[8px] text-slate-500 font-mono">O'rtacha 7.5 soat/kun</span>
-                </div>
-              </div>
+              {/* STATS OVERVIEW CARDS - computed from real attendance data */}
+              {(() => {
+                const today = new Date().toISOString().split("T")[0];
+                const todayAtt = historicalLogs;
+                const totalPeople = childrenList.length + employeesList.length;
+                const todayPresent = historicalLogs.filter(l => l.direction === "KIRISH").length;
+                const attendancePct = totalPeople > 0 ? Math.round((todayPresent / (childrenList.length || 1)) * 100) : 0;
+
+                // Compute monthly hours from historicalLogs (checkIn/checkOut diff)
+                // We use the real attendance data fetched from /api/attendance
+                // For now show count-based stats; full hour calc needs checkIn+checkOut pairs
+                const presentCount = historicalLogs.filter(l => l.direction === "KIRISH").length;
+                const childCount = childrenList.length || 1;
+                return (
+                  <div className="grid grid-cols-3 gap-2 shrink-0">
+                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Bugungi Davomat</span>
+                      <span className="text-lg font-black text-emerald-400 font-mono block mt-0.5">
+                        {presentCount}/{childCount}
+                      </span>
+                      <span className="text-[8px] text-slate-500 font-mono">Bugun kelmagan bolalar</span>
+                    </div>
+                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Xodimlar (Ro'yxat)</span>
+                      <span className="text-lg font-black text-sky-400 font-mono block mt-0.5">
+                        {employeesList.length}
+                      </span>
+                      <span className="text-[8px] text-slate-500 font-mono">Jami xodimlar soni</span>
+                    </div>
+                    <div className="bg-slate-950 p-3 rounded-2xl border border-slate-800 text-center">
+                      <span className="text-[9px] text-slate-400 font-bold uppercase block">Bolalar (Ro'yxat)</span>
+                      <span className="text-lg font-black text-amber-400 font-mono block mt-0.5">
+                        {childrenList.length}
+                      </span>
+                      <span className="text-[8px] text-slate-500 font-mono">Jami bolalar soni</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* LIVE ATTENDANCE JOURNAL TABLE */}
               <div className="space-y-2 flex-1 min-h-0 flex flex-col">
@@ -1174,7 +1210,7 @@ export default function FaceIdSimulator({ childrenList, onScanComplete }: FaceId
                             </span>
                           </td>
                           <td className="py-2 px-2 text-center text-slate-400">{log.method}</td>
-                          <td className="py-2 px-2 text-center text-emerald-400 font-bold">36.5°C</td>
+                          <td className="py-2 px-2 text-center text-emerald-400 font-bold">{typeof (log as any).temperature !== 'undefined' ? `${(log as any).temperature}°C` : '36.5°C'}</td>
                           <td className="py-2 px-3 text-right text-slate-400">{log.timestamp}</td>
                         </tr>
                       ))}

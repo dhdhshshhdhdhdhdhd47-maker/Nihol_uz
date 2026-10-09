@@ -115,6 +115,7 @@ export default function LoginScreen({ onLoginSuccess, onEnterParentPortal }: Log
 
   const demoAccounts = [
     { label: "Super Admin", user: "superadmin", pass: "admin135@", desc: "Tizim Boshqaruvi" },
+    { label: "Direktor", user: "director", pass: "dir123", desc: "Bog'cha Boshqaruvi" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {

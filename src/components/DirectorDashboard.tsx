@@ -915,14 +915,14 @@ export default function DirectorDashboard({
 
       // Add director to employees so they can login directly
       const empId = `E-DIR-${Date.now().toString().slice(-6)}`;
-      const newDirEmp: Employee = {
+      const newDirEmp: Employee & { plainPassword?: string; passwordHash?: string } = {
         id: empId,
         name: dirName,
         username: dirUser,
-        login: dirUser,
         role: "Direktor",
         phone: dirPhone,
         passport: dirPassp,
+        birthDate: "1985-01-01",
         kindergartenId: targetKgId,
         status: "Faol",
         joinedDate: new Date().toISOString().split("T")[0],
@@ -1457,6 +1457,7 @@ export default function DirectorDashboard({
         rhFactor: "Positive (+)",
         height: 100,
         weight: 18,
+        bmi: 18,
         vaccinations: ["BCG", "Hepatitis B"],
         lastCheckup: new Date().toISOString().split("T")[0]
       },
@@ -1531,7 +1532,7 @@ export default function DirectorDashboard({
       parentName: editChildParentName,
       parentPhone: editChildParentPhone,
       telegramChatId: editChildTelegramChatId,
-      status: editChildStatus,
+      status: editChildStatus as any,
     } : c);
 
     setLocalChildren(updated);
@@ -1589,15 +1590,13 @@ export default function DirectorDashboard({
 
     setAddEmpError(null);
 
-    const newEmpObj: Employee = {
+    const newEmpObj: Employee & { plainPassword?: string; passwordHash?: string } = {
       id: `E-${Date.now().toString().slice(-6)}`,
       name: empName,
       username: empUser,
-      login: empUser,
-      role: empRole,
+      role: empRole as any,
       phone: empPhone,
       passport: empPassport,
-      photo: empPhoto || "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
       birthDate: "1992-05-15",
       status: "Faol",
       joinedDate: new Date().toISOString().split("T")[0],
@@ -1671,10 +1670,10 @@ export default function DirectorDashboard({
       ...emp,
       name: editEmpName,
       username: editEmpUser,
-      role: editEmpRole,
+      role: editEmpRole as any,
       phone: editEmpPhone,
       passport: editEmpPassport,
-      status: editEmpStatus,
+      status: editEmpStatus as any,
     } : emp);
 
     setLocalEmployees(updated);
@@ -1778,6 +1777,7 @@ export default function DirectorDashboard({
       name: groupName,
       teacherId: groupTeacher,
       capacity: Number(groupCapacity) || 25,
+      spots: Number(groupCapacity) || 25,
       kindergartenId: user.kindergartenId || "K-1"
     };
 
@@ -1922,14 +1922,14 @@ export default function DirectorDashboard({
     const targetId = payChildId || (childrenList[0] ? childrenList[0].id : "");
     if (!targetId) return;
 
-    const newPaymentObj: Payment = {
+    const newPaymentObj: Payment & { operatorName?: string; kindergartenId?: string } = {
       id: `P-${Date.now().toString().slice(-4)}`,
       childId: targetId,
       amount: Number(payAmount),
-      paymentType: payType,
+      paymentType: payType as any,
       month: payMonth,
       date: new Date().toISOString().split("T")[0],
-      status: "To'langan",
+      status: "To'landi",
       operatorName: user.name,
       kindergartenId: user.kindergartenId || "K-1"
     };
@@ -5119,9 +5119,9 @@ export default function DirectorDashboard({
                       {employeesList.map(e => (
                         <tr key={e.id} className="hover:bg-slate-850/30">
                           <td className="py-3 px-4 font-bold text-white flex items-center gap-2.5">
-                            {e.photo || e.avatar ? (
+                            {(e as any).photo || e.avatar ? (
                               <img
-                                src={e.photo || e.avatar}
+                                src={(e as any).photo || e.avatar}
                                 alt={e.name}
                                 className="w-8 h-8 rounded-full object-cover border border-emerald-500/30 flex-shrink-0"
                               />
@@ -5645,6 +5645,89 @@ export default function DirectorDashboard({
                       </tbody>
                     </table>
                   </div>
+
+                  {/* MONTHLY HOURS SUMMARY SECTION */}
+                  {(() => {
+                    const now = new Date();
+                    const periodDays = employeeTimeFilter === "daily" ? 1 : employeeTimeFilter === "weekly" ? 7 : 30;
+                    const periodLabel = employeeTimeFilter === "daily" ? "Bugun" : employeeTimeFilter === "weekly" ? "Haftalik" : "Oylik";
+
+                    // Helper: parse HH:MM string to minutes
+                    const parseMinutes = (t?: string | null): number => {
+                      if (!t) return 0;
+                      const parts = t.split(":");
+                      if (parts.length < 2) return 0;
+                      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+                    };
+
+                    // Filter attendance records for this period, only for this kindergarten
+                    const kgChildren = childrenList.map(c => c.id);
+                    const kgEmployees = employeesList.map(e => e.id);
+                    const periodRecords = attendanceList.filter(a => {
+                      const recDate = new Date(a.date);
+                      const diffDays = Math.ceil((now.getTime() - recDate.getTime()) / (1000 * 60 * 60 * 24));
+                      return diffDays <= periodDays;
+                    });
+
+                    // Employee total hours
+                    const empRecords = periodRecords.filter(a => kgEmployees.includes(a.childId));
+                    let totalEmpMinutes = 0;
+                    empRecords.forEach(r => {
+                      const checkIn = parseMinutes(r.checkIn);
+                      const checkOut = parseMinutes(r.checkOut);
+                      if (checkIn > 0 && checkOut > 0 && checkOut > checkIn) {
+                        totalEmpMinutes += (checkOut - checkIn);
+                      }
+                    });
+                    const totalEmpHours = (totalEmpMinutes / 60).toFixed(1);
+
+                    // Children total hours
+                    const childRecords = periodRecords.filter(a => kgChildren.includes(a.childId));
+                    let totalChildMinutes = 0;
+                    childRecords.forEach(r => {
+                      const checkIn = parseMinutes(r.checkIn);
+                      const checkOut = parseMinutes(r.checkOut);
+                      if (checkIn > 0 && checkOut > 0 && checkOut > checkIn) {
+                        totalChildMinutes += (checkOut - checkIn);
+                      }
+                    });
+                    const totalChildHours = (totalChildMinutes / 60).toFixed(1);
+                    const avgChildHoursPerDay = childrenList.length > 0 && periodDays > 0
+                      ? (totalChildMinutes / 60 / (childrenList.length * periodDays)).toFixed(1)
+                      : "0.0";
+
+                    return (
+                      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-slate-950 border border-sky-500/20 p-4 rounded-2xl text-center">
+                          <span className="text-[9px] text-sky-400 font-bold uppercase block mb-1">
+                            👔 Xodimlar ish soati ({periodLabel})
+                          </span>
+                          <div className="text-2xl font-black text-sky-400 font-mono">{totalEmpHours} soat</div>
+                          <span className="text-[9px] text-slate-500 font-mono mt-1 block">
+                            {empRecords.length} ta yozuv | {employeesList.length} xodim
+                          </span>
+                        </div>
+                        <div className="bg-slate-950 border border-amber-500/20 p-4 rounded-2xl text-center">
+                          <span className="text-[9px] text-amber-400 font-bold uppercase block mb-1">
+                            🧒 Bolalar bog'cha soati ({periodLabel})
+                          </span>
+                          <div className="text-2xl font-black text-amber-400 font-mono">{totalChildHours} soat</div>
+                          <span className="text-[9px] text-slate-500 font-mono mt-1 block">
+                            O'rtacha {avgChildHoursPerDay} soat/bola/kun
+                          </span>
+                        </div>
+                        <div className="bg-slate-950 border border-emerald-500/20 p-4 rounded-2xl text-center">
+                          <span className="text-[9px] text-emerald-400 font-bold uppercase block mb-1">
+                            📊 Jami qaydlar ({periodLabel})
+                          </span>
+                          <div className="text-2xl font-black text-emerald-400 font-mono">{periodRecords.length} ta</div>
+                          <span className="text-[9px] text-slate-500 font-mono mt-1 block">
+                            {childRecords.length} bola + {empRecords.length} xodim
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

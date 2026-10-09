@@ -23,6 +23,32 @@
       "birthDate": "1990-01-01",
       "joinedDate": "2024-01-01",
       "status": "Faol"
+    },
+    {
+      "id": "E-DIR-1",
+      "username": "director",
+      "passwordHash": "dir123",
+      "role": "Direktor",
+      "name": "Bog'cha Direktori",
+      "phone": "+998901234567",
+      "passport": "AA7654321",
+      "birthDate": "1985-05-15",
+      "joinedDate": "2024-01-01",
+      "status": "Faol",
+      "kindergartenId": "K-1"
+    },
+    {
+      "id": "E-DIR-2",
+      "username": "direktor",
+      "passwordHash": "dir123",
+      "role": "Direktor",
+      "name": "Bog'cha Direktori",
+      "phone": "+998901234567",
+      "passport": "AA7654321",
+      "birthDate": "1985-05-15",
+      "joinedDate": "2024-01-01",
+      "status": "Faol",
+      "kindergartenId": "K-1"
     }
   ],
   "attendance": [],

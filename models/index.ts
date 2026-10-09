@@ -59,6 +59,41 @@ export const KindergartenModel = {
     dbState.kindergartens.push(k);
     saveLocalDb();
     return k;
+  },
+
+  async update(id: string, updates: any): Promise<any> {
+    if (isPg()) {
+      const mappedUpdates = toSnakeCase(updates);
+      const keys = Object.keys(mappedUpdates).filter(k => k !== "id" && k !== "created_at");
+      if (keys.length === 0) return this.getById(id);
+      
+      const setClause = keys.map((k, i) => `${k} = $${i + 2}`).join(", ");
+      const values = keys.map(k => mappedUpdates[k]);
+      const q = `UPDATE kindergartens SET ${setClause} WHERE id = $1 RETURNING *`;
+      const res = await query(q, [id, ...values]);
+      return res.rows.length ? toCamelCase(res.rows[0]) : null;
+    }
+    const idx = dbState.kindergartens.findIndex(k => k.id === id);
+    if (idx !== -1) {
+      dbState.kindergartens[idx] = { ...dbState.kindergartens[idx], ...updates };
+      saveLocalDb();
+      return dbState.kindergartens[idx];
+    }
+    return null;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    if (isPg()) {
+      const res = await query("DELETE FROM kindergartens WHERE id = $1 RETURNING id", [id]);
+      return (res.rowCount || 0) > 0;
+    }
+    const idx = dbState.kindergartens.findIndex(k => k.id === id);
+    if (idx !== -1) {
+      dbState.kindergartens.splice(idx, 1);
+      saveLocalDb();
+      return true;
+    }
+    return false;
   }
 };
 

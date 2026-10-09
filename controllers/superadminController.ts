@@ -1,4 +1,4 @@
-import { KindergartenModel, ComplaintModel, AuditLogModel, SuperAdminDocumentModel } from "../models";
+import { KindergartenModel, EmployeeModel, ComplaintModel, AuditLogModel, SuperAdminDocumentModel } from "../models";
 import { getKgId } from "../middleware/validationMiddleware";
 import { dbState, saveLocalDb } from "../db";
 import { broadcastDataUpdate } from "../utils/wsManager";
@@ -190,6 +190,43 @@ export const SuperAdminController = {
     } catch (err: any) {
       console.error("[Superadmin] createAuditLog error:", err);
       res.status(500).json({ success: false, message: "Audit jurnalini yozishda xatolik!" });
+    }
+  },
+
+  async assignDirector(req: any, res: any) {
+    try {
+      const kgId = req.params.id;
+      const { name, username, password, phone, passport } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ success: false, message: "Username va parol kiritilishi shart!" });
+      }
+
+      const empId = `E-DIR-${Date.now().toString().slice(-6)}`;
+      const newDir = {
+        id: empId,
+        name: name || "Yangi Direktor",
+        username: username,
+        passwordHash: password,
+        role: "Direktor",
+        phone: phone || "",
+        passport: passport || "",
+        kindergartenId: kgId,
+        status: "Faol",
+        birthDate: "1985-01-01",
+        joinedDate: new Date().toISOString().split("T")[0]
+      };
+
+      await EmployeeModel.create(newDir);
+      await KindergartenModel.update(kgId, {
+        directorName: name || "Yangi Direktor",
+        directorUsername: username,
+        directorPhone: phone || ""
+      });
+
+      res.json({ success: true, message: "Direktor logini muvaffaqiyatli yaratildi!", director: newDir });
+    } catch (err: any) {
+      console.error("[Superadmin] assignDirector error:", err);
+      res.status(500).json({ success: false, message: "Direktor biriktirishda xatolik!" });
     }
   }
 };

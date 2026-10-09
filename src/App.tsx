@@ -159,9 +159,9 @@ export default function App() {
     }
   }, [currentUser]);
 
-  // Global Auth Header Injector — wraps the main.tsx API engine fetch, adds auth headers
+  // Global Auth Header Injector — attaches auth headers to native fetch
   useEffect(() => {
-    const alreadyPatchedFetch = window.fetch; // This is the main.tsx engine
+    const originalFetch = window.fetch;
     let isPatched = false;
 
     const authHeaderFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -186,8 +186,7 @@ export default function App() {
       }
 
       newInit.headers = headers;
-      // Call the main.tsx patched fetch (which handles local API + Render fallback)
-      return alreadyPatchedFetch(input, newInit);
+      return originalFetch(input, newInit);
     };
 
     try {
@@ -198,18 +197,10 @@ export default function App() {
       isPatched = true;
     }
 
-    // Silent keep-alive ping every 8 seconds to prevent Render spin-down
-    const keepAliveInterval = setInterval(() => {
-      alreadyPatchedFetch("https://bogcham-uz.onrender.com/api/health", { method: "GET" })
-        .catch(() => {});
-    }, 8000);
-
     return () => {
-      // Restore the main.tsx engine (not the real originalFetch)
       if (isPatched) {
-        try { window.fetch = alreadyPatchedFetch; } catch {}
+        try { window.fetch = originalFetch; } catch {}
       }
-      clearInterval(keepAliveInterval);
     };
   }, []);
 
