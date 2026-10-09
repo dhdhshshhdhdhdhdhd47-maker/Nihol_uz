@@ -22,9 +22,15 @@ router.get("/telegram-simulator/status", SystemController.getTelegramSimulatorSt
 router.post("/telegram-simulator/toggle-error", SystemController.toggleTelegramError);
 router.get("/telegram-simulator/logs", SystemController.getTelegramSimulatorLogs);
 
-// Global Logs
+// Global Logs & Notifications
 router.get("/sms/logs", SystemController.getSmsLogs);
+router.post("/sms/send", SystemController.sendSms);
 router.get("/notifications/history", SystemController.getTelegramNotifications);
+router.post("/notifications/send", SystemController.sendNotification);
+router.post("/notifications/broadcast", SystemController.broadcastNotification);
+
+// Gemini Deep Dive
+router.post("/gemini/attendance-deep-dive", SystemController.attendanceDeepDive);
 
 // System Factory Reset
 router.post("/admin/reset-db", SystemController.clearDatabase);

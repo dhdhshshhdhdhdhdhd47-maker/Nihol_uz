@@ -13,6 +13,7 @@ router.post("/kindergartens/:id/toggle-portal", SuperAdminController.togglePorta
 
 router.get("/superadmin/documents", SuperAdminController.getDocuments);
 router.post("/superadmin/documents", SuperAdminController.createDocument);
+router.post("/superadmin/documents/:docId/distribute", SuperAdminController.distributeDocument);
 
 router.get("/complaints", validateKindergartenData, SuperAdminController.getComplaints);
 router.post("/complaints/resolve", SuperAdminController.resolveComplaint);

@@ -280,5 +280,22 @@ export const SuperAdminController = {
       console.error("[Superadmin] togglePortal error:", err);
       res.status(500).json({ success: false, message: "Portal holatini o'zgartirishda xatolik!" });
     }
+  },
+
+  async distributeDocument(req: any, res: any) {
+    try {
+      const { docId } = req.params;
+      const { panels } = req.body;
+      const doc = await SuperAdminDocumentModel.getById(docId);
+      if (!doc) {
+        return res.status(404).json({ success: false, message: "Hujjat topilmadi!" });
+      }
+      const targetAudience = Array.isArray(panels) ? panels.join(", ") : (panels || "Hamma");
+      const updated = await SuperAdminDocumentModel.update(docId, { targetAudience });
+      res.json({ success: true, document: updated });
+    } catch (err: any) {
+      console.error("[Superadmin] distributeDocument error:", err);
+      res.status(500).json({ success: false, message: "Hujjatni tarqatishda xatolik!" });
+    }
   }
 };

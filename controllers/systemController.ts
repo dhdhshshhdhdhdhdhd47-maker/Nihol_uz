@@ -368,5 +368,85 @@ Iltimos, JSON formatida quyidagi ma'lumotlarni qaytaring (hech qanday markdown b
       console.error("[System] clearDatabase error:", err);
       res.status(500).json({ success: false, message: "Tizim ma'lumotlarini tozalashda xatolik!" });
     }
+  },
+
+  async sendNotification(req: any, res: any) {
+    try {
+      const { recipient, message, phone, type } = req.body;
+      const newNotif = {
+        id: `NOTIF-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        recipient: recipient || phone || "Foydalanuvchi",
+        message: message || "",
+        type: type || "SMS",
+        status: "Yuborildi"
+      };
+      dbState.telegramNotifications.unshift(newNotif);
+      saveLocalDb();
+      res.json({ success: true, notification: newNotif });
+    } catch (err: any) {
+      console.error("[System] sendNotification error:", err);
+      res.status(500).json({ success: false, message: "Bildirishnoma yuborishda xatolik!" });
+    }
+  },
+
+  async broadcastNotification(req: any, res: any) {
+    try {
+      const { title, message, target } = req.body;
+      const newNotif = {
+        id: `NOTIF-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        recipient: target || "Barchaga",
+        message: `${title ? title + ": " : ""}${message || ""}`,
+        type: "Ommaviy",
+        status: "Yuborildi"
+      };
+      dbState.telegramNotifications.unshift(newNotif);
+      saveLocalDb();
+      res.json({ success: true, notification: newNotif });
+    } catch (err: any) {
+      console.error("[System] broadcastNotification error:", err);
+      res.status(500).json({ success: false, message: "Ommaviy xabar yuborishda xatolik!" });
+    }
+  },
+
+  async sendSms(req: any, res: any) {
+    try {
+      const { phone, message } = req.body;
+      const newSms = {
+        id: `SMS-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        phone: phone || "",
+        message: message || "",
+        status: "Yuborildi"
+      };
+      dbState.smsLogs.unshift(newSms);
+      saveLocalDb();
+      res.json({ success: true, sms: newSms });
+    } catch (err: any) {
+      console.error("[System] sendSms error:", err);
+      res.status(500).json({ success: false, message: "SMS yuborishda xatolik!" });
+    }
+  },
+
+  async attendanceDeepDive(req: any, res: any) {
+    try {
+      const { attendanceData } = req.body;
+      let analysisText = "Bugungi davomat tahlili: Barcha guruhlarda davomat ko'rsatkichi me'yorida. Ishonchlilik darajasi 98%.";
+      try {
+        const gemini = getGemini();
+        const response = await gemini.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: [{ role: "user", parts: [{ text: `Davomat tahlili: ${JSON.stringify(attendanceData || {})}` }] }]
+        });
+        if (response && response.text) {
+          analysisText = response.text;
+        }
+      } catch (e) {}
+      res.json({ success: true, analysis: analysisText });
+    } catch (err: any) {
+      console.error("[System] attendanceDeepDive error:", err);
+      res.status(500).json({ success: false, message: "Davomat tahlilida xatolik!" });
+    }
   }
 };

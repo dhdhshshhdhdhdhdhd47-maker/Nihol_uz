@@ -13,6 +13,7 @@ import superadminRoutes from "./routes/superadminRoutes";
 import systemRoutes from "./routes/systemRoutes";
 import parentRoutes from "./routes/parentRoutes";
 import safetyRoutes from "./routes/safetyRoutes";
+import swaggerRoutes from "./routes/swaggerRoutes";
 
 const app = express();
 
@@ -63,5 +64,6 @@ app.use("/api", superadminRoutes);
 app.use("/api", systemRoutes);
 app.use("/api", parentRoutes);
 app.use("/api", safetyRoutes);
+app.use("/api", swaggerRoutes);
 
 export default app;
