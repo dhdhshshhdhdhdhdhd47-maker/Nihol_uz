@@ -205,6 +205,8 @@ export default function App() {
   }, []);
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+
   useEffect(() => {
     // Clear legacy stale cache overrides to ensure strict backend server authority
     const legacyKeys = [
