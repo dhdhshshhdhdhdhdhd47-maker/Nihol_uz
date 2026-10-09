@@ -16,19 +16,20 @@ export const SuperAdminController = {
 
   async createKindergarten(req: any, res: any) {
     try {
-      const { name, address, directorName, phone, capacity } = req.body;
+      const { id, name, address, directorName, directorUsername, phone, capacity } = req.body;
       if (!name) {
         return res.status(400).json({ success: false, message: "Bog'cha nomi kiritilishi majburiy!" });
       }
 
       const list = await KindergartenModel.getAll();
-      const kgId = `K-${list.length + 1}`;
+      const kgId = id || `K-${Date.now().toString().slice(-4)}`;
 
       const newKg = {
         id: kgId,
         name,
         address: address || "Toshkent shahri",
         directorName: directorName || "Tayinlanmagan",
+        directorUsername: directorUsername || "",
         phone: phone || "+998900000000",
         capacity: Number(capacity || 100),
         status: "Faol",
@@ -47,6 +48,7 @@ export const SuperAdminController = {
         kindergartenId: kgId
       });
 
+      broadcastDataUpdate("kindergartens");
       res.json({ success: true, kindergarten: created });
     } catch (err: any) {
       console.error("[Superadmin] createKindergarten error:", err);
@@ -222,6 +224,9 @@ export const SuperAdminController = {
         directorUsername: username,
         directorPhone: phone || ""
       });
+
+      broadcastDataUpdate("kindergartens");
+      broadcastDataUpdate("employees");
 
       res.json({ success: true, message: "Direktor logini muvaffaqiyatli yaratildi!", director: newDir });
     } catch (err: any) {

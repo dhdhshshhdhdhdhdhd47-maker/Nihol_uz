@@ -827,10 +827,11 @@ export default function DirectorDashboard({
     triggerNotification("Yangi bog'cha muvaffaqiyatli qo'shildi!");
 
     try {
-      await fetch("/api/kindergartens", {
+      const res = await fetch("/api/kindergartens", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          id: newKgObj.id,
           name: kgName,
           address: kgAddress || "Toshkent shahri",
           phone: kgPhone || "+998900000000",
@@ -838,6 +839,13 @@ export default function DirectorDashboard({
           directorUsername: ""
         })
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.kindergarten) {
+          setKindergartens(prev => [data.kindergarten, ...prev.filter(k => k.id !== newKgObj.id && k.id !== data.kindergarten.id)]);
+        }
+      }
+      await fetchKindergartens();
     } catch (err) {
       console.error(err);
     }
