@@ -205,7 +205,16 @@ export default function App() {
   }, []);
 
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  useEffect(() => {
+    // Clear legacy stale cache overrides to ensure strict backend server authority
+    const legacyKeys = [
+      "cache_children", "cache_employees", "cache_groups", "cache_payments", "cache_kindergartens",
+      "deleted_children_ids", "deleted_employees_ids", "deleted_groups_ids", "deleted_kindergartens_ids",
+      "added_children", "added_employees", "added_groups", "added_payments", "added_kindergartens",
+      "modified_children", "modified_employees", "modified_groups", "modified_kindergartens"
+    ];
+    legacyKeys.forEach(k => localStorage.removeItem(k));
+  }, []);
 
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
 
@@ -435,7 +444,8 @@ export default function App() {
 
     const connectWS = () => {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws-hardware`;
+      const host = window.location.hostname.includes("vercel.app") ? "nihol-backend.onrender.com" : window.location.host;
+      const wsUrl = `${protocol}//${host}/ws-hardware`;
       
       ws = new WebSocket(wsUrl);
 

@@ -651,7 +651,8 @@ export default function TeacherDashboard({ user, childrenList, onRefresh }: Teac
 
     const connectWS = () => {
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws-hardware`;
+      const host = window.location.hostname.includes("vercel.app") ? "nihol-backend.onrender.com" : window.location.host;
+      const wsUrl = `${protocol}//${host}/ws-hardware`;
       
       ws = new WebSocket(wsUrl);
 

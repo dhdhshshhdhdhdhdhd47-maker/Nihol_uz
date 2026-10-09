@@ -785,18 +785,7 @@ export default function DirectorDashboard({
       const res = await fetch("/api/kindergartens");
       if (res.ok) {
         const data = await res.json();
-        const deletedIds: string[] = JSON.parse(localStorage.getItem("deleted_kindergartens_ids") || "[]");
-        const added: any[] = JSON.parse(localStorage.getItem("added_kindergartens") || "[]");
-        const mod: Record<string, any> = JSON.parse(localStorage.getItem("modified_kindergartens") || "{}");
-
-        let list = Array.isArray(data) ? data.filter((k: any) => k && k.id && !deletedIds.includes(k.id)) : [];
-        list = list.map((k: any) => mod[k.id] ? { ...k, ...mod[k.id] } : k);
-        for (const a of added) {
-          if (a && a.id && !list.find((k: any) => k.id === a.id) && !deletedIds.includes(a.id)) {
-            list.unshift(a);
-          }
-        }
-        setKindergartens(list);
+        setKindergartens(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error(err);
@@ -955,6 +944,8 @@ export default function DirectorDashboard({
           passport: dirPassp
         })
       });
+      await fetchKindergartens();
+      onRefresh();
     } catch (err) {
       console.error(err);
     }
@@ -1290,7 +1281,8 @@ export default function DirectorDashboard({
     const connectWebSocket = () => {
       try {
         const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws-hardware`;
+        const host = window.location.hostname.includes("vercel.app") ? "nihol-backend.onrender.com" : window.location.host;
+        const wsUrl = `${protocol}//${host}/ws-hardware`;
         ws = new WebSocket(wsUrl);
 
         ws.onmessage = (event) => {
