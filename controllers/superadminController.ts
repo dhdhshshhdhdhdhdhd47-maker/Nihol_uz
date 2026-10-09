@@ -228,5 +228,57 @@ export const SuperAdminController = {
       console.error("[Superadmin] assignDirector error:", err);
       res.status(500).json({ success: false, message: "Direktor biriktirishda xatolik!" });
     }
+  },
+
+  async updateKindergarten(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const updated = await KindergartenModel.update(id, req.body);
+      if (!updated) {
+        return res.status(404).json({ success: false, message: "Bog'cha topilmadi!" });
+      }
+      broadcastDataUpdate("kindergartens");
+      res.json({ success: true, kindergarten: updated });
+    } catch (err: any) {
+      console.error("[Superadmin] updateKindergarten error:", err);
+      res.status(500).json({ success: false, message: "Bog'cha ma'lumotlarini yangilashda xatolik!" });
+    }
+  },
+
+  async deleteKindergarten(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const ok = await KindergartenModel.delete(id);
+      if (!ok) {
+        return res.status(404).json({ success: false, message: "Bog'cha topilmadi!" });
+      }
+      await AuditLogModel.create({
+        id: `LOG-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        username: "Tizim SuperAdmin",
+        action: `Bog'cha o'chirildi (ID: ${id})`,
+        ip: req.ip || "127.0.0.1",
+        device: "SuperAdmin Dashboard",
+        kindergartenId: id
+      });
+      broadcastDataUpdate("kindergartens");
+      res.json({ success: true, message: "Bog'cha muvaffaqiyatli o'chirildi!" });
+    } catch (err: any) {
+      console.error("[Superadmin] deleteKindergarten error:", err);
+      res.status(500).json({ success: false, message: "Bog'chani o'chirishda xatolik!" });
+    }
+  },
+
+  async togglePortal(req: any, res: any) {
+    try {
+      const { id } = req.params;
+      const { active } = req.body;
+      const updated = await KindergartenModel.update(id, { parentPortalActive: active });
+      broadcastDataUpdate("kindergartens");
+      res.json({ success: true, kindergarten: updated });
+    } catch (err: any) {
+      console.error("[Superadmin] togglePortal error:", err);
+      res.status(500).json({ success: false, message: "Portal holatini o'zgartirishda xatolik!" });
+    }
   }
 };

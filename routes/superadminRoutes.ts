@@ -6,7 +6,10 @@ const router = Router();
 
 router.get("/kindergartens", SuperAdminController.getKindergartens);
 router.post("/kindergartens", SuperAdminController.createKindergarten);
+router.put("/kindergartens/:id", SuperAdminController.updateKindergarten);
+router.delete("/kindergartens/:id", SuperAdminController.deleteKindergarten);
 router.post("/kindergartens/:id/director", SuperAdminController.assignDirector);
+router.post("/kindergartens/:id/toggle-portal", SuperAdminController.togglePortal);
 
 router.get("/superadmin/documents", SuperAdminController.getDocuments);
 router.post("/superadmin/documents", SuperAdminController.createDocument);
