@@ -15,7 +15,7 @@ let pgConnectionAttempted = false;
 
 export function getPool(): pg.Pool | null {
   if (pool) return pool;
-  if (pgConnectionAttempted && !pgConnected) return null; // Don't retry if it failed before!
+  if (pgConnectionAttempted && !pgConnected) return null;
 
   const user = process.env.PG_USER;
   const password = process.env.PG_PASSWORD;
@@ -40,10 +40,9 @@ export function getPool(): pg.Pool | null {
       host,
       port: port ? parseInt(port, 10) : 5432,
       database,
-      connectionTimeoutMillis: 2000, // short timeout to fail fast
+      connectionTimeoutMillis: 2000,
     });
     
-    // Quick test query to verify connection
     tempPool.query("SELECT NOW()", (err) => {
       pgConnecting = false;
       if (err) {
@@ -69,13 +68,13 @@ export function getPool(): pg.Pool | null {
 
 export function isPg(): boolean {
   if (!pgConnectionAttempted) {
-    getPool(); // trigger first check
+    getPool();
   }
   return pgConnected;
 }
 
-// 2. Local Fallback Database State (Matches server.ts exactly)
-const DB_FILE = path.join(process.cwd(), "db_data.json");
+// 2. Local Fallback Database State (Stored in persistent file)
+const DB_FILE = process.env.DB_FILE_PATH || path.join(process.cwd(), "db_data.json");
 
 export interface DbState {
   kindergartens: any[];
@@ -104,6 +103,7 @@ export interface DbState {
   bodyInspections: any[];
   violenceAlerts: any[];
   anonymousSosReports: any[];
+  allergies?: any[];
 }
 
 export let dbState: DbState = {
@@ -132,41 +132,43 @@ export let dbState: DbState = {
   failedCheckins: [],
   bodyInspections: [],
   violenceAlerts: [],
-  anonymousSosReports: []
+  anonymousSosReports: [],
+  allergies: []
 };
 
-// Load initial data from db_data.json on module load
+// Load saved data from JSON file on server start
 try {
   if (fs.existsSync(DB_FILE)) {
     const raw = fs.readFileSync(DB_FILE, "utf-8");
-    const data = JSON.parse(raw);
+    const parsed = JSON.parse(raw);
     dbState = {
-      kindergartens: data.kindergartens || [],
-      children: data.children || [],
-      groups: data.groups || [],
-      employees: data.employees || [],
-      attendance: data.attendance || [],
-      mealPlans: data.mealPlans || [],
-      dailyActivities: data.dailyActivities || [],
-      payments: data.payments || [],
-      expenses: data.expenses || [],
-      payrolls: data.payrolls || [],
-      purchaseRequests: data.purchaseRequests || [],
-      incomes: data.incomes || [],
-      complaints: data.complaints || [],
-      publicAnnouncements: data.publicAnnouncements || [],
-      auditLogs: data.auditLogs || [],
-      kgIngredients: data.kgIngredients || [],
-      kgRecipes: data.kgRecipes || [],
-      kgMealGallery: data.kgMealGallery || [],
-      superAdminDocuments: data.superAdminDocuments || [],
-      smsLogs: data.smsLogs || [],
-      telegramNotifications: data.telegramNotifications || [],
-      activeDevices: data.activeDevices || [],
-      failedCheckins: data.failedCheckins || [],
-      bodyInspections: data.bodyInspections || [],
-      violenceAlerts: data.violenceAlerts || [],
-      anonymousSosReports: data.anonymousSosReports || []
+      kindergartens: Array.isArray(parsed.kindergartens) ? parsed.kindergartens : [],
+      children: Array.isArray(parsed.children) ? parsed.children : [],
+      groups: Array.isArray(parsed.groups) ? parsed.groups : [],
+      employees: Array.isArray(parsed.employees) ? parsed.employees : [],
+      attendance: Array.isArray(parsed.attendance) ? parsed.attendance : [],
+      mealPlans: Array.isArray(parsed.mealPlans) ? parsed.mealPlans : [],
+      dailyActivities: Array.isArray(parsed.dailyActivities) ? parsed.dailyActivities : [],
+      payments: Array.isArray(parsed.payments) ? parsed.payments : [],
+      expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+      payrolls: Array.isArray(parsed.payrolls) ? parsed.payrolls : [],
+      purchaseRequests: Array.isArray(parsed.purchaseRequests) ? parsed.purchaseRequests : [],
+      incomes: Array.isArray(parsed.incomes) ? parsed.incomes : [],
+      complaints: Array.isArray(parsed.complaints) ? parsed.complaints : [],
+      publicAnnouncements: Array.isArray(parsed.publicAnnouncements) ? parsed.publicAnnouncements : [],
+      auditLogs: Array.isArray(parsed.auditLogs) ? parsed.auditLogs : [],
+      kgIngredients: Array.isArray(parsed.kgIngredients) ? parsed.kgIngredients : [],
+      kgRecipes: Array.isArray(parsed.kgRecipes) ? parsed.kgRecipes : [],
+      kgMealGallery: Array.isArray(parsed.kgMealGallery) ? parsed.kgMealGallery : [],
+      superAdminDocuments: Array.isArray(parsed.superAdminDocuments) ? parsed.superAdminDocuments : [],
+      smsLogs: Array.isArray(parsed.smsLogs) ? parsed.smsLogs : [],
+      telegramNotifications: Array.isArray(parsed.telegramNotifications) ? parsed.telegramNotifications : [],
+      activeDevices: Array.isArray(parsed.activeDevices) ? parsed.activeDevices : [],
+      failedCheckins: Array.isArray(parsed.failedCheckins) ? parsed.failedCheckins : [],
+      bodyInspections: Array.isArray(parsed.bodyInspections) ? parsed.bodyInspections : [],
+      violenceAlerts: Array.isArray(parsed.violenceAlerts) ? parsed.violenceAlerts : [],
+      anonymousSosReports: Array.isArray(parsed.anonymousSosReports) ? parsed.anonymousSosReports : [],
+      allergies: Array.isArray(parsed.allergies) ? parsed.allergies : []
     };
     console.log("[DB] JSON Fallback store loaded successfully.");
   } else {

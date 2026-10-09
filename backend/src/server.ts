@@ -1,19 +1,16 @@
 import express from "express";
-import path from "path";
-import fs from "fs";
 import http from "http";
 import dotenv from "dotenv";
 import { WebSocketServer } from "ws";
-import { createServer as createViteServer } from "vite";
 
-import app from "./backend/src/app";
-import { wsClients } from "./backend/src/utils/wsManager";
-import { startTelegramBot } from "./backend/src/utils/telegramManager";
-import { dbState } from "./backend/src/db";
+import app from "./app";
+import { wsClients } from "./utils/wsManager";
+import { startTelegramBot } from "./utils/telegramManager";
+import { dbState } from "./db";
 
 dotenv.config();
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 
 // API Route Fallback (404 for unmatched API requests)
 app.use("/api/*", (req, res) => {
@@ -21,6 +18,16 @@ app.use("/api/*", (req, res) => {
   res.status(404).json({
     success: false,
     message: `API route not found: ${req.method} ${req.path}`
+  });
+});
+
+// Root ping
+app.get("/", (req, res) => {
+  res.json({
+    status: "online",
+    service: "Nihol AI Kindergarten ERP Backend API",
+    version: "1.0.0",
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -64,51 +71,13 @@ async function startServer() {
     }
   });
 
-  // Start real-world Telegram Bot long-polling loop if credentials are set
+  // Start Telegram Bot polling
   startTelegramBot();
 
-  // Integrated Vite Dev-Server Middleware for Assets / Production Static serving
-  if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa"
-    });
-    app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    const indexPath = path.join(distPath, "index.html");
-    if (fs.existsSync(indexPath)) {
-      app.use(express.static(distPath));
-      app.get("*", (req: any, res: any) => {
-        res.sendFile(indexPath);
-      });
-    } else {
-      app.get("/", (req: any, res: any) => {
-        res.json({
-          status: "online",
-          message: "🍃 Bog'cham.uz Backend SaaS Server is Live!",
-          timestamp: new Date().toISOString()
-        });
-      });
-    }
-  }
-
   server.listen(PORT, "0.0.0.0", () => {
-    console.log(`[ERP Core] Modular Full-Stack Server with WebSocket running on http://0.0.0.0:${PORT}`);
-    console.log(`[Face ID Integration] Active listener for biometrics on port ${PORT}`);
-
-    // Self-ping Keep-Alive Loop (Every 10 seconds to keep Render awake & active)
-    setInterval(async () => {
-      try {
-        const pingUrl = `http://127.0.0.1:${PORT}/api/health`;
-        await fetch(pingUrl);
-      } catch (err: any) {
-        // Silent keep-alive ping
-      }
-    }, 10000);
-    console.log("[Keep-Alive Cron] Active: 10-second self-ping loop initialized to prevent Render sleep mode.");
+    console.log(`[Nihol ERP Backend] Server listening on http://0.0.0.0:${PORT}`);
+    console.log(`[Swagger Docs] Available on http://0.0.0.0:${PORT}/api-docs`);
   });
 }
 
 startServer();
-export default app;
